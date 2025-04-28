@@ -169,6 +169,13 @@ PBPKmodelAA <- function(t,state,parameter){
     
     metAA_GSH <- k_onAA_GSH*c_GSH_Li*m_AA_Li / MW_GSH
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+    # Trine: I think we alo should have a balanced equation for proteinbinding in each tissue, an that
+    # Frome Sweeney:  
+    # rpbl1 = kpbl1*al1 # protein binding
+    # Relimpbl1 = apbL1*KPTL # protein loss
+    # RapbL1 = rpbL1 - relimpbl1 # equation taking both brotein binding and loss into account. This goes inn to dm_AA_Li
+    # apbL1 = INTEG(Rapbl1, 0.)
+    
     # units checked -> mg/h  
     #   RAL1 = QL*CA1 + KA*STOM - QL*CVL1 - RP450 - RGST1 - rpbl1
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - 
