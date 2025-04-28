@@ -185,7 +185,8 @@ PBPKmodelAA <- function(t,state,parameter){
     # Metabolism of AA by P450 will remove AA
     
     # units checked -> mg/h   
-    dm_AAMA <- metAA_P450  - m_AAMA*k_exc_AAMA
+    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA
+    # Trine: metAA_P450 is not contributing to AAMA, but to the formation of GA. I think metAA_P45o should be replaced by metAA_GSH
     # units checked -> mg/h
     metGA_GSH <- k_onGA_GSH*c_GSH_Li*m_GA_Li / MW_GSH
     metGA_EH <- (V_max_EH *MW_ga *c_GA_Li)/(KM_EH+c_GA_Li)
