@@ -162,20 +162,31 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_AA_Ki <- Q_Ki*c_AA_AB -Q_Ki*(c_AA_Ki/pAA_KiB) -k_onAA_Ki*m_AA_Ki 
     dm_GA_Ki <- Q_Ki*c_GA_AB -Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
-    # units checked -> mg/h   
+    # units checked -> mg/h  
+    
+    
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     
     metAA_GSH <- k_onAA_GSH*c_GSH_Li*m_AA_Li / MW_GSH
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+    # Trine: I think we alo should have a balanced equation for proteinbinding in each tissue, an that
+    # Frome Sweeney:  
+    # rpbl1 = kpbl1*al1 # protein binding
+    # Relimpbl1 = apbL1*KPTL # protein loss
+    # RapbL1 = rpbL1 - relimpbl1 # equation taking both brotein binding and loss into account. This goes inn to dm_AA_Li
+    # apbL1 = INTEG(Rapbl1, 0.)
+    
     # units checked -> mg/h  
     #   RAL1 = QL*CA1 + KA*STOM - QL*CVL1 - RP450 - RGST1 - rpbl1
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - 
       k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH
+    # Trine: We need to also include the loss rate of bound materiel in the liver (See KPTL in the Sweeney 2010)
     # Trine: I think the two last parts of the equation should be subtracted. 
-    # Metabolism of AA by P450 and EH will remove AA
+    # Metabolism of AA by P450 will remove AA
     
     # units checked -> mg/h   
-    dm_AAMA <- metAA_P450  - m_AAMA*k_exc_AAMA
+    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA
+    # Trine: metAA_P450 is not contributing to AAMA, but to the formation of GA. I think metAA_P45o should be replaced by metAA_GSH
     # units checked -> mg/h
     metGA_GSH <- k_onGA_GSH*c_GSH_Li*m_GA_Li / MW_GSH
     metGA_EH <- (V_max_EH *MW_ga *c_GA_Li)/(KM_EH+c_GA_Li)
@@ -202,15 +213,21 @@ PBPKmodelAA <- function(t,state,parameter){
     
     dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
     
+    # Mass balance
+    #--------------
+    
+    # AA
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
     dm_AA_in <- Q_P*c_AA_inh + k_AAuptake*m_AA_dose
-    
+    # GA
     dm_GA_out <- metGA_GSH + metGA_EH 
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
     dm_GA_in <- Q_P*c_GA_inh + metGA_GSH +metGA_EH
+    
+    # GSH - Do we beed a mass balance for GSH
     
     return(list(c(dm_AA_Lu, dm_GA_Lu,
                   dm_AA_AB,  dm_GA_AB,  dm_AA_VB,    dm_GA_VB,
