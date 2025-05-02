@@ -81,9 +81,9 @@ V_max_EH = 20 /MW_ga*BW^0.7
 KM_p450 = 10.0
 KM_EH = 100.0
 
-k_0_GSH = 7
+k_0_GSH = 7 # Initial GSH (mmol/l)
 
-AGSH0 = k_0_GSH*V_Li
+AGSH0 = k_0_GSH*V_Li # Amount GSH (mmol)
 
 KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
 KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
@@ -117,7 +117,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0, m_AA_VB = 0.0, m_GA_VB = 0.0,
           a_pb_GA_Li   = 0.0,
           m_GAMA  = 0.0,
           #m_GAMA_urinary = 0.0, 
-          m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
+          m_GSH_Li = k_0_GSH * V_Li * MW_GSH, # Trine: mg?
           m_AA_T = 0.0, m_GA_T = 0.0,
           m_GAOH = 0.0, 
           m_AA_out = 0.0,
@@ -172,7 +172,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     # units checked -> mg/h
-    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li 
+    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li # Trine: I not sure that the units are correct here. AGSH (mmol) and  m_GSH_Li (mg)
     
     metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
