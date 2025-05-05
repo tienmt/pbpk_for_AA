@@ -169,6 +169,9 @@ PBPKmodelAA <- function(t,state,parameter){
     
     # Liver
     #--------------------------------
+    
+    # I also want Maria to check the units for these equations (Test)
+    
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     # units checked -> mg/h
