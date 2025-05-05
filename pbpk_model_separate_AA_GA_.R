@@ -73,7 +73,7 @@ MW_ga = 87   # mg/mmol
 MW_GSH = 307.32 # mg/mmol
 
 VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
-VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
+VMAXG1 = VMAXGC1/BW**0.7    # !$'Liver AA-GSH rate' Trine: Checked and I get this to be mmol/hr. I deleted the MW and then it will be mg/hr, which is correct.
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
@@ -81,12 +81,12 @@ V_max_EH = 20 /MW_ga*BW^0.7
 KM_p450 = 10.0
 KM_EH = 100.0
 
-k_0_GSH = 7
+k_0_GSH = 7 # Initial GSH (mmol/l)
 
-AGSH0 = k_0_GSH*V_Li
+AGSH0 = k_0_GSH*V_Li*MW_GSH # Amount GSH (mmol) Trine: multiplied with MW GSH the unit will be correct (mg)
 
-KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
-KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/l Trine: We should keep the model in mg, not mmol
+KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mg/l Trine: Converted from mmol/l to mg/l
 KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
 
 
@@ -94,6 +94,9 @@ KPT_Li = 0.015     # !'protein turnover rate in liver'
 KPT_Ki = 0.013     #  !'protein turnover rate in kidney'
 KPTR = 0.013     # !'protein turnover rate in rpt'
 KPTS = 0.0039    # !'protein turnover rate in spt'
+
+#Trine: Why don't we use the protein turnover rate for blood?
+# Trine: Since KPTRB and KPTPL are the same, could we combine ethis as a turnover rate in blood?
 KPTRB = 0.0039   # !'protein turnover rate in rbc'
 KPTPL = 0.0039   # !'protein turnover rate in plasma'
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -114,7 +117,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0, m_AA_VB = 0.0, m_GA_VB = 0.0,
           a_pb_GA_Li   = 0.0,
           m_GAMA  = 0.0,
           #m_GAMA_urinary = 0.0, 
-          m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
+          m_GSH_Li = k_0_GSH * V_Li * MW_GSH, # Trine: mg?
           m_AA_T = 0.0, m_GA_T = 0.0,
           m_GAOH = 0.0, 
           m_AA_out = 0.0,
@@ -144,23 +147,38 @@ PBPKmodelAA <- function(t,state,parameter){
     
     c_GSH_Li <- m_GSH_Li/V_Li
     
-    # units checked -> mg/h   
-    dm_AA_AB <- Q_C*(c_AA_VB - c_AA_AB) -k_onAA_B*m_AA_AB
+    # Blood
+    #-----------------------------
+    # units checked -> mg/h
+    #Trine: Why is the equation for the AB built up differently than VB? I suggest it to be simmilar, and according to the 
+    # overall figure of our model.
+    dm_AA_AB <- Q_C*c_AA_VB - Q_T*(c_AA_T/pAA_TB) - Q_Li*(c_AA_Li/pAA_LiB) - Q_Ki*(c_AA_Ki/pAA_KiB) -k_onAA_B*m_AA_AB
     # units checked -> mg/h   
     dm_AA_VB <- Q_T*(c_AA_T/pAA_TB) +Q_Li*(c_AA_Li/pAA_LiB) +Q_Ki*(c_AA_Ki/pAA_KiB) - Q_C*c_AA_VB -k_onAA_B*m_AA_VB
+    
+    # Trine: I added this. Can we make an overall turnover rate in blood? Is this correct? 
+    da_pb_AA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - da_pb_AA_B*KPTRB
+    
+    # Kidney
+    #---------------------------------
     # units checked -> mg/h   
     dm_AA_Ki <- Q_Ki*c_AA_AB -Q_Ki*(c_AA_Ki/pAA_KiB) -k_onAA_Ki*m_AA_Ki 
     
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
+    # Liver
+    #--------------------------------
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     # units checked -> mg/h
-    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li 
+    # dm_GSH_Li <-  -k_cl_GSH*m_GSH_Li + metAA_GSH - metGA_GSH
+    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li # Trine: I introduced a multiplication with the MW GSH in the AGSHO equation. Now it is (mg)
     
-    metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
-    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+    # metAA_GSH <- k_onAA_GSH*c_GSH_Li*m_AA_Li / MW_GSH
+    metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG) #Trine: The units was not correct here. I had to convert all the constants to mg from mmol
+    
+    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li) # Trine: the equation is similar to previous model and still correct
     
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
@@ -169,12 +187,17 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Liver
     da_pb_AA_Li <- k_onAA_Li*m_AA_Li - a_pb_AA_Li * KPT_Li
     
-
+    # Tissue
+    #--------------------------------------------------------------
     # units checked -> mg/h   
     dm_AA_T <- Q_T*(c_AA_AB - c_AA_T/pAA_TB) -k_onAA_T*m_AA_T
     
+    # Urine
+    #-------------------------------------------------------------
     # units checked -> mg/h   
     dm_AAMA <- metAA_P450 + metAA_GSH  - m_AAMA*k_exc_AAMA
+    
+    #Trine: We need to include the protein turnover also in urine. See Sweeney
     
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_in <- k_AAuptake*m_AA_dose
@@ -207,7 +230,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
     
     
-    # protein tunr over GA in Liver
+    # protein turn over GA in Liver
     da_pb_GA_Li = k_onGA_Li*m_GA_Li - a_pb_GA_Li*KPT_Li 
     
     
