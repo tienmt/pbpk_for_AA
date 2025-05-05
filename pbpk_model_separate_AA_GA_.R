@@ -73,7 +73,7 @@ MW_ga = 87   # mg/mmol
 MW_GSH = 307.32 # mg/mmol
 
 VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
-VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
+VMAXG1 = VMAXGC1/BW**0.7    # !$'Liver AA-GSH rate' Trine: Checked and I get this to be mmol/hr. I deleted the MW and then it will be mg/hr, which is correct.
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
@@ -83,10 +83,10 @@ KM_EH = 100.0
 
 k_0_GSH = 7 # Initial GSH (mmol/l)
 
-AGSH0 = k_0_GSH*V_Li # Amount GSH (mmol)
+AGSH0 = k_0_GSH*V_Li*MW_GSH # Amount GSH (mmol) Trine: multiplied with MW GSH the unit will be correct (mg)
 
-KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
-KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/l Trine: We should keep the model in mg, not mmol
+KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mg/l Trine: Converted from mmol/l to mg/l
 KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
 
 
@@ -172,9 +172,13 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     # units checked -> mg/h
-    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li # Trine: I not sure that the units are correct here. AGSH (mmol) and  m_GSH_Li (mg)
+    # dm_GSH_Li <-  -k_cl_GSH*m_GSH_Li + metAA_GSH - metGA_GSH
+    dm_GSH_Li <- AGSH0 - k_cl_GSH*m_GSH_Li # Trine: I introduced a multiplication with the MW GSH in the AGSHO equation. Now it is (mg)
     
-    metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
+    # metAA_GSH <- k_onAA_GSH*c_GSH_Li*m_AA_Li / MW_GSH
+    metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG) #Trine: The units was not correct here. I had to convert all the constants to mg from mmol
+    
+    #  metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
     
     # units checked -> mg/h  
@@ -227,7 +231,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
     
     
-    # protein tunr over GA in Liver
+    # protein turn over GA in Liver
     da_pb_GA_Li = k_onGA_Li*m_GA_Li - a_pb_GA_Li*KPT_Li 
     
     
