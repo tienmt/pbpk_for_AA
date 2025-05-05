@@ -198,7 +198,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # Urine
     #-------------------------------------------------------------
     # units checked -> mg/h   
-    dm_AAMA <- metAA_P450 + metAA_GSH  - m_AAMA*k_exc_AAMA
+    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA # Maria: The first term should be deleted
     
     #Trine: We need to include the protein turnover also in urine. See Sweeney
     
