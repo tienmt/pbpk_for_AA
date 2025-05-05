@@ -178,8 +178,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # metAA_GSH <- k_onAA_GSH*c_GSH_Li*m_AA_Li / MW_GSH
     metAA_GSH <- VMAXG1 *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG) #Trine: The units was not correct here. I had to convert all the constants to mg from mmol
     
-    #  metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
-    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li) # Trine: the equation is similar to previous model and still correct
     
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
