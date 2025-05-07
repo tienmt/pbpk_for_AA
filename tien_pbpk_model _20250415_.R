@@ -243,11 +243,11 @@ plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.1)
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
+plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = 'time (hours)', ylab = 'GAMA', ylim = c(0,.002) )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = 'time (hours)', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
