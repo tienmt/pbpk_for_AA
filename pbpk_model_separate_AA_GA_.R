@@ -165,6 +165,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
+
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     
@@ -190,7 +191,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # Urine
     #-------------------------------------------------------------
     # units checked -> mg/h   
-    dm_AAMA <- metAA_P450 + metAA_GSH  - m_AAMA*k_exc_AAMA
+    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA # Maria: The first term should be deleted
     
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_in <- k_AAuptake*m_AA_dose
