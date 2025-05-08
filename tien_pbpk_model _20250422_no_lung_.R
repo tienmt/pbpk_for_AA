@@ -152,10 +152,11 @@ PBPKmodelAA <- function(t,state,parameter){
     # Trine: I think the two last parts of the equation should be subtracted. 
     # Metabolism of AA by P450 and EH will remove AA
     
-    # Trine try to teach Maria to use github
+
     
     # units checked -> mg/h   
-    dm_AAMA <- metAA_P450  - m_AAMA*k_exc_AAMA
+    dm_AAMA <- metAA_P450  - m_AAMA*k_exc_AAMA## AAMA is formed only from GSH conjugation of acrylamide and not P450
+    #correct eq. dm_AAMA <- metAA_GSH - k_exc_AAMA * m_AAMA
     # units checked -> mg/h
     metGA_GSH <- k_onGA_GSH*c_GSH_Li*m_GA_Li / MW_GSH
     metGA_EH <- (V_max_EH *MW_ga *c_GA_Li)/(KM_EH+c_GA_Li)
@@ -180,7 +181,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_T <- Q_T*(c_AA_AB - c_AA_T/pAA_TB) -k_onAA_T*m_AA_T
     dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) -k_onGA_T*m_GA_T
 
-    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
+    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA ### it should be - k_exc_GAOH * m_GAOH
 
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
