@@ -72,8 +72,8 @@ MW_ga = 87   # mg/mmol
 
 MW_GSH = 307.32 # mg/mmol
 
-VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
-VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
+VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/(hr*kg^0.7) Trine: From the paper Sweeney 2010
+VMAXG1 = VMAXGC1/BW**0.7    # !$'Liver AA-GSH rate' Trine: This needs to be mg/h and exclude the term MW
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
@@ -85,9 +85,9 @@ k_0_GSH = 7
 
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
-KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
-KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
+KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
+KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 
 
 KPT_Li = 0.015     # !'protein turnover rate in liver'
@@ -174,7 +174,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
-    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
+    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG) Trine: We need to check this equation. The units are not correct
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
     
     # units checked -> mg/h  
