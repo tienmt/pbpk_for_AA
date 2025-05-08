@@ -152,6 +152,8 @@ PBPKmodelAA <- function(t,state,parameter){
     # Trine: I think the two last parts of the equation should be subtracted. 
     # Metabolism of AA by P450 and EH will remove AA
     
+    # Trine try to teach Maria to use github
+    
     # units checked -> mg/h   
     dm_AAMA <- metAA_P450  - m_AAMA*k_exc_AAMA
     # units checked -> mg/h
