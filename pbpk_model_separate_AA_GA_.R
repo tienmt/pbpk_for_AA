@@ -236,7 +236,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
     
     dm_GA_out <- metGA_GSH + metGA_EH 
-    dm_GA_in <- metGA_GSH +metGA_EH
+    dm_GA_in <- metGA_GSH +metGA_EH ## these terms should go out. The metAA_P450 term should go in, in order to describe correctly the metabolism
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
 
