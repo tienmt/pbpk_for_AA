@@ -72,8 +72,8 @@ MW_ga = 87   # mg/mmol
 
 MW_GSH = 307.32 # mg/mmol
 
-VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/(hr*kg^0.7) Trine: From the paper Sweeney 2010
-VMAXG1 = VMAXGC1/BW**0.7    # !$'Liver AA-GSH rate' Trine: This needs to be mg/h and exclude the term MW
+VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
+VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
@@ -85,9 +85,9 @@ k_0_GSH = 7
 
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
-KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
-KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
+KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
+KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
+KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
 
 
 KPT_Li = 0.015     # !'protein turnover rate in liver'
@@ -165,7 +165,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
-
+    
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     
@@ -174,16 +174,14 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
-
-#    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
-    Vmax_AA_GSH <- 22 # from the Sweeny (mg/h kg 0.7) fitted 
+    # unit chekced mg/h 
+    Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
-
-
+    
     
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
-
-
+    
+    
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
     
@@ -204,8 +202,8 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_in <- k_AAuptake*m_AA_dose
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
-########################################################################################  
-########################################################################################    
+    ########################################################################################  
+    ########################################################################################    
     #----#---#  Model for Ga  #---#---#    
     #concentrations blood in the organs in mg/L
     c_GA_AB <- m_GA_AB/V_AB ;   c_GA_VB <- m_GA_VB/V_VB
@@ -225,7 +223,8 @@ PBPKmodelAA <- function(t,state,parameter){
     
     
     # units checked -> mg/h
-    metGA_GSH <- k_onGA_GSH * c_GSH_Li *m_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
+    Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted 
+    metGA_GSH <- Vmax_GA_GSH * c_GSH_Li *c_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
     
     metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
     # units checked -> mg/h 
@@ -244,10 +243,10 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
     
     dm_GA_out <- metGA_GSH + metGA_EH 
-    dm_GA_in <- metGA_GSH +metGA_EH ## these terms should go out. The metAA_P450 term should go in, in order to describe correctly the metabolism
+    dm_GA_in <- metAA_P450
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
-
+    
     
     return(list(c(dm_AA_AB,  dm_GA_AB,
                   da_pb_AA_B,
@@ -304,7 +303,6 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
 
 
 
