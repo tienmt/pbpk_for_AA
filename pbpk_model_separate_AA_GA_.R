@@ -174,9 +174,16 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
-    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG) Trine: We need to check this equation. The units are not correct
-    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+
+#    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
+    Vmax_AA_GSH <- 22 # from the Sweeny (mg/h kg 0.7) fitted 
+    metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
+
+
     
+    metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
+
+
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
     
@@ -219,6 +226,7 @@ PBPKmodelAA <- function(t,state,parameter){
     
     # units checked -> mg/h
     metGA_GSH <- k_onGA_GSH * c_GSH_Li *m_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
+    
     metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
     # units checked -> mg/h 
     dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
