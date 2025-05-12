@@ -72,8 +72,8 @@ MW_ga = 87   # mg/mmol
 
 MW_GSH = 307.32 # mg/mmol
 
-VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
-VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
+VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/(hr*kg^0.7) Trine: From the paper Sweeney 2010
+VMAXG1 = VMAXGC1/BW**0.7    # !$'Liver AA-GSH rate' Trine: This needs to be mg/h and exclude the term MW
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
@@ -85,9 +85,9 @@ k_0_GSH = 7
 
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
-KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
-KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
+KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
+KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 
 
 KPT_Li = 0.015     # !'protein turnover rate in liver'
@@ -174,9 +174,11 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
+
 #    metAA_GSH <- k_onAA_GSH *c_AA_Li * c_GSH_Li /(c_AA_Li + KMG1)/(c_GSH_Li + KMGG)
     Vmax_AA_GSH <- 22 # from the Sweeny (mg/h kg 0.7) fitted 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
+
 
     
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
@@ -242,7 +244,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
     
     dm_GA_out <- metGA_GSH + metGA_EH 
-    dm_GA_in <- metGA_GSH +metGA_EH
+    dm_GA_in <- metGA_GSH +metGA_EH ## these terms should go out. The metAA_P450 term should go in, in order to describe correctly the metabolism
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
 
