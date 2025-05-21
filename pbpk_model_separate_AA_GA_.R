@@ -88,9 +88,9 @@ k_0_GSH = 7
 
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-KMG1 = 100/MW_aa  #!Km with respect to AA for GSH conjugation mM
-KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
-KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
+KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
+KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 
 
 KPT_Li = 0.015    # !'protein turnover rate in liver'
@@ -168,11 +168,13 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
-    # units checked -> mg/h   
-    dm_AA_dose <- -k_AAuptake*m_AA_dose
     
     # Liver
     #--------------------------------
+    # units checked -> mg/h   
+    dm_AA_dose <- -k_AAuptake*m_AA_dose
+    
+
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
@@ -209,16 +211,25 @@ PBPKmodelAA <- function(t,state,parameter){
     c_GA_T <- m_GA_T/V_T
     c_GA_Li <- m_GA_Li/(V_Li*PL2)
     c_GA_Ki <- m_GA_Ki/V_Ki
+    
+    # Blood
+    #-----------------------------
     # units checked -> mg/h   
     dm_GA_AB <- Q_C*(c_GA_VB - c_GA_AB) -k_onGA_B*m_GA_AB
     # units checked -> mg/h   
     dm_GA_VB <- Q_T*(c_GA_T/pGA_TB) +Q_Li*(c_GA_Li/pGA_LiB) +Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB -k_onGA_B*m_GA_VB
     # units checked -> mg/h   
+    
+    # Kidney
+    #---------------------------------
     dm_GA_Ki <- Q_Ki*c_GA_AB -Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
     
     # protein tunr over AA in Kidney
     da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
     
+    
+    # Liver
+    #--------------------------------
     # units checked -> mg/h
     metGA_GSH <- Vmax_GA_GSH * c_GSH_Li *c_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
     metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
@@ -231,9 +242,13 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h, 
     dm_GAMA <-  metGA_GSH  -m_GAMA*k_exc_GAMA
     
+    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
+    
+    # Tissue
+    #-----------------------------------------------------
     dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) -k_onGA_T*m_GA_T
     
-    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
+    
     
     dm_GA_out <- metGA_GSH + metGA_EH 
     dm_GA_in <- metAA_P450
@@ -280,6 +295,8 @@ yobs_urine <- data.frame(
   AAMA = c(0.0/1000000, 32.8/1000000, 69.5/1000000, 42.8/1000000, 45.2/1000000, 24.5/1000000, 15/1000000, 7/1000000)*234.28, #https://pubchem.ncbi.nlm.nih.gov/compound/N-Acetyl-S-_2-carbamoylethyl_-L-cysteine
   GAMA = c(0.0, 2.15*1e-6, 3.66*1e-6, 4.38*1e-6, 6.57*1e-6, 5.26*1e-6, 3.50*1e-6, 3.0*1e-6)*250.27
 )
+
+
 # plot for AAMA in urinary
 par(mfrow=c(2,2),mar=c(2,4,.5,.5))
 plot(out[,'time'], out[,'m_AAMA']   ,type = 'l',xlab = 'time', ylab = 'aama', ylim = c(0,.03) )
@@ -298,5 +315,8 @@ plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
+##################################################################################
+#### Check mass balance
+#################################################################################
 
-
+Qbal = Q_C - Q_T - Q_Ki - Q_Li 
