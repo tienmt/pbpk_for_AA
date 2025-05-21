@@ -145,7 +145,7 @@ PBPKmodelAA <- function(t,state,parameter){
     c_AA_AB <- m_AA_AB/V_AB   
     c_AA_VB <- m_AA_VB/V_VB
     c_AA_T <- m_AA_T/V_T
-    c_AA_Li <- m_AA_Li/V_Li
+    c_AA_Li <- m_AA_Li/V_Li*PL1 #Trine: Should we multiply with PL1 as we do for GA
     c_AA_Ki <- m_AA_Ki/V_Ki
     
     c_GSH_Li <- m_GSH_Li/V_Li
