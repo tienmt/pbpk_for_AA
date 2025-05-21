@@ -80,6 +80,9 @@ V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
 V_max_EH = 20 /MW_ga*BW^0.7  
 KM_p450 = 10.0
 KM_EH = 100.0
+# maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
+Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
+Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
 
 k_0_GSH = 7
 
@@ -90,12 +93,12 @@ KMGG = 0.1        # !KM with respect to GSH for AA or GA conjugation with GSH mM
 KMG2 = 100/MW_ga  #!Km with respect to GA for GSH conjugation mM
 
 
-KPT_Li = 0.015     # !'protein turnover rate in liver'
-KPT_Ki = 0.013     #  !'protein turnover rate in kidney'
-KPTR = 0.013     # !'protein turnover rate in rpt'
-KPTS = 0.0039    # !'protein turnover rate in spt'
-KPTRB = 0.0039   # !'protein turnover rate in rbc'
-KPTPL = 0.0039   # !'protein turnover rate in plasma'
+KPT_Li = 0.015    # !'protein turnover rate in liver'
+KPT_Ki = 0.013    #  !'protein turnover rate in kidney'
+KPTR = 0.013      # !'protein turnover rate in rpt'
+KPTS = 0.0039     # !'protein turnover rate in spt'
+KPTRB = 0.0039    # !'protein turnover rate in rbc'
+KPTPL = 0.0039    # !'protein turnover rate in plasma'
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -165,7 +168,6 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
-    
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     
@@ -175,12 +177,9 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
     # unit chekced mg/h 
-    Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
     
-    
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
-    
     
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
@@ -217,23 +216,17 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_GA_Ki <- Q_Ki*c_GA_AB -Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
     
-    
     # protein tunr over AA in Kidney
     da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
     
-    
     # units checked -> mg/h
-    Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted 
     metGA_GSH <- Vmax_GA_GSH * c_GSH_Li *c_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
-    
     metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
     # units checked -> mg/h 
     dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
     
-    
     # protein tunr over GA in Liver
     da_pb_GA_Li = k_onGA_Li*m_GA_Li - a_pb_GA_Li*KPT_Li 
-    
     
     # units checked -> mg/h, 
     dm_GAMA <-  metGA_GSH  -m_GAMA*k_exc_GAMA
@@ -278,7 +271,7 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 ################################################################
 # manual readout from Kopp and Dekant 2009
 ################################################################
-times <- seq(from = 0, to = 60, by = 0.1)
+times <- seq(from = 0, to = 80, by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
                    time = c(0.0),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
@@ -303,7 +296,6 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
 
 
 
