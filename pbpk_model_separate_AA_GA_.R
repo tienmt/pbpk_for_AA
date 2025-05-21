@@ -23,10 +23,10 @@ V_Li <- BW*F_Li
 ##https://journals.sagepub.com/doi/pdf/10.1177/ANIB_32_3-4
 QCC = 16        #12.5 # maybe 14 or 6.5 check?
 Q_C = QCC*BW^0.75
-FQ_P = 2.5/100 
+#FQ_P = 2.5/100 Trine: We don't have a lung compartment in this model
 FQ_Li = 0.19
 FQ_Ki = 0.255 #total - there is also an aterial flow rate 
-FQ_T = 1 -( FQ_Li + FQ_Ki +FQ_P)
+FQ_T = 1 -( FQ_Li + FQ_Ki) # +FQ_P) Trine: We don't have a lung compartment in this model
 Q_Li <- Q_C*FQ_Li
 Q_Ki <- Q_C*FQ_Ki
 Q_T <- Q_C*FQ_T
