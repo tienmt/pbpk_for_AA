@@ -3,7 +3,7 @@ library(minpack.lm)
 
 graphics.off()
 
-#body weight in kg
+# body weight in kg
 BW = 70 
 # fractions of BW
 ##https://journals.sagepub.com/doi/pdf/10.1177/ANIB_32_3-4
@@ -13,13 +13,13 @@ F_B_VB = 0.65 #fraction: venous blood of blood volume
 F_Li = 0.026
 F_Ki = 0.0044
 F_T = 1-(F_B+F_Li+F_Ki)
-#organ volumes in L
+# organ volumes in L
 V_AB <- BW*F_B*F_B_AB 
 V_VB <- BW*F_B*F_B_VB 
 V_T <- BW*F_T
 V_Ki <- BW*F_Ki
 V_Li <- BW*F_Li
-#cardiac output in L/(kg*h)
+# cardiac output in L/(kg*h)
 ##https://journals.sagepub.com/doi/pdf/10.1177/ANIB_32_3-4
 QCC = 16        #12.5 # maybe 14 or 6.5 check?
 Q_C = QCC*BW^0.75
@@ -36,11 +36,7 @@ pAA_TB = 0.2
 pAA_KiB = 0.2
 pAA_LiB = 1.5
 
-pGA_TB = 0.97
-pGA_LiB = 0.9
-pGA_KiB = .3
-
-#reaction rate constants 
+# reaction rate constants 
 k_AAuptake = 1 #1/h
 
 k_onAA_T = 0.28 #1/h
@@ -51,6 +47,29 @@ k_onAA_Ki = 0.83 #1/h
 k_syn_GSH = 0.25 #mmol/h 
 k_cl_GSH = 0.35 #1/h
 k_onAA_GSH = 0.55 #L/(mmol h)
+
+k_exc_AAMA = 0.049      # 0.049 #1/h or 0.13 # this will change the shape
+
+k_exc_AA <- 2
+
+MW_aa = 71   # mg/mmol
+
+# Maximum velocity for enzymatic reaction 
+V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
+# maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
+Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
+
+k_0_GSH = 7
+
+AGSH0 = k_0_GSH * V_Li * MW_GSH
+
+
+### PARAMETERS FOR GA
+# partition coefficient
+pGA_TB = 0.97
+pGA_LiB = 0.9
+pGA_KiB = .3
+
 k_onGA_GSH = 0.8 #L/(mmol h)
 
 k_onGA_T = 0.089 #1/h
@@ -58,16 +77,13 @@ k_onGA_B = 0.108 #1/h
 k_onGA_Ki = k_onAA_T/2 #1/h
 k_onGA_Li = 0.215 #1/h
 
-k_exc_AAMA = 0.049      # 0.049 #1/h or 0.13 # this will change the shape
 k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027
 k_exc_GAOH = 0.077     # 1/h
 k_exc_GA <- 1.48       # 1/h Q_Ki*0.025
-k_exc_AA <- 2
 
 PL1 = 1.7     # !$'liver/blood partition AA'
 PL2 = 0.9    # !$'liver/blood partition GA'
 
-MW_aa = 71   # mg/mmol
 MW_ga = 87   # mg/mmol
 
 MW_GSH = 307.32 # mg/mmol
@@ -76,22 +92,15 @@ VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
 VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
 
 # Maximum velocity for enzymatic reaction 
-V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
 V_max_EH = 20 /MW_ga*BW^0.7  
 KM_p450 = 10.0
 KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
-Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
-
-k_0_GSH = 7
-
-AGSH0 = k_0_GSH * V_Li * MW_GSH
 
 KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
 KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
-
 
 KPT_Li = 0.015    # !'protein turnover rate in liver'
 KPT_Ki = 0.013    #  !'protein turnover rate in kidney'
@@ -174,7 +183,7 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
     
-
+    
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
