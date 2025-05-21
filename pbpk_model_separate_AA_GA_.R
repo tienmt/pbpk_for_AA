@@ -100,9 +100,9 @@ Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
 
 KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
 #Sweeney has this parameter for rats ans 100 mg/L why did you use this number and why divived by MW??
-##Sweeney says this is 64 mg/L in the paper
+##Sweeney says this is 64 mg/L in the paper##This comment is wrong ignore
 KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
-####and that this is 307 mg/L
+####and that this is 307 mg/L #This comment is wrong ignore
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 #The same comment as for KMG1
 
