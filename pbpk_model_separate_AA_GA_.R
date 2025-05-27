@@ -35,7 +35,7 @@ Q_T <- Q_C*FQ_T
 pAA_TB = 0.2
 pAA_KiB = 0.2
 pAA_LiB = 1.5 #Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
-              # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8
+              # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
 # reaction rate constants 
 k_AAuptake = 1 #1/h
