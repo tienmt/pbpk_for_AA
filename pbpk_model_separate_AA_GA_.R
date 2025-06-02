@@ -61,7 +61,7 @@ V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
 Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
 
 k_0_GSH = 7
-
+MW_GSH = 307.32 # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
 
@@ -146,7 +146,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           m_GA_in = 0.0,
           a_pb_AA_Ki = 0,
           a_pb_AA_Li = 0,
-          a_pb_GA_Ki = 0
+          a_pb_GA_Ki = 0, a_pb_AA_T = 0
 )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # PBPK model for Acrylamide 
@@ -182,12 +182,10 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
     
-    
     # Liver
     #--------------------------------
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
-    
     
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
@@ -208,6 +206,8 @@ PBPKmodelAA <- function(t,state,parameter){
     #--------------------------------------------------------------
     # units checked -> mg/h   
     dm_AA_T <- Q_T*(c_AA_AB - c_AA_T/pAA_TB) -k_onAA_T*m_AA_T
+    # protein tunr over AA in Tussue
+    da_pb_AA_T <- k_onAA_T*m_AA_T - a_pb_AA_T * KPTS
     
     # Urine
     #-------------------------------------------------------------
@@ -290,7 +290,8 @@ PBPKmodelAA <- function(t,state,parameter){
                   dm_GA_in,
                   da_pb_AA_Ki,
                   da_pb_AA_Li,
-                  da_pb_GA_Ki
+                  da_pb_GA_Ki,
+                  da_pb_AA_T
     )))
   })
 }
@@ -322,11 +323,11 @@ plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.1)
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
+plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.005) )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
@@ -334,4 +335,4 @@ points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17
 #### Check mass balance
 #################################################################################
 
-Qbal = Q_C - Q_T - Q_Ki - Q_Li 
+Qbal == Q_C - Q_T - Q_Ki - Q_Li 
