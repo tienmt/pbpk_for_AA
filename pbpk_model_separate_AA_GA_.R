@@ -34,7 +34,8 @@ Q_T <- Q_C*FQ_T
 # partition coefficient
 pAA_TB = 0.2
 pAA_KiB = 0.2
-pAA_LiB = 1.5
+pAA_LiB = 1.5 #Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
+              # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
 # reaction rate constants 
 k_AAuptake = 1 #1/h
@@ -106,12 +107,12 @@ KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 #The same comment as for KMG1
 
-KPT_Li = 0.015    # !'protein turnover rate in liver'
-KPT_Ki = 0.013    #  !'protein turnover rate in kidney'
-KPTR = 0.013      # !'protein turnover rate in rpt'
-KPTS = 0.0039     # !'protein turnover rate in spt'
-KPTRB = 0.0039    # !'protein turnover rate in rbc'
-KPTPL = 0.0039    # !'protein turnover rate in plasma'
+KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the exp. values of Sweeney
+KPT_Ki = 0.013    #  !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
+KPTR = 0.013      # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
+KPTS = 0.0039     # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
+KPTRB = 0.0039    # !'protein turnover rate in rbc'# how did we get that?
+KPTPL = 0.0039    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
