@@ -1,6 +1,5 @@
 library(deSolve)
 library(minpack.lm)
-
 graphics.off()
 
 # body weight in kg
@@ -31,37 +30,50 @@ Q_Li <- Q_C*FQ_Li
 Q_Ki <- Q_C*FQ_Ki
 Q_T <- Q_C*FQ_T
 
-# partition coefficient
+# partition coefficient 
+### we comback later
 pAA_TB = 0.2
 pAA_KiB = 0.2
-pAA_LiB = 1.5 #Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
-              # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
+pAA_LiB = 0.8 
+# Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
+# in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
 # reaction rate constants 
 k_AAuptake = 1 #1/h
 
-k_onAA_T = 0.28 #1/h
-k_onAA_B = 0.36 #1/h
-k_onAA_Li = 0.71 #1/h
+k_onAA_T = 0.28  #1/h     # we took it from Sweenney
+k_onAA_B = 0.36  #1/h
+k_onAA_Li = 0.31 #1/h
 k_onAA_Ki = 0.83 #1/h
 
-k_syn_GSH = 0.25 #mmol/h 
-k_cl_GSH = 0.35 #1/h
-k_onAA_GSH = 0.55 #L/(mmol h)
+# k_syn_GSH = 0.25  #mmol/h  # we have not used this parameter
 
-k_exc_AAMA = 0.049      # 0.049 #1/h or 0.13 # this will change the shape
+#??????????????????
+k_cl_GSH = 0.35   # 1/h   # we should check: notation, meaning, reference
 
-k_exc_AA <- 2
+# k_onAA_GSH = 0.55 # L/(mmol h)
+# check, we do not use it any more.
+
+
+
+
+k_exc_AAMA = 0.049   # 0.049 #1/h or 0.13 # this will change the shape
+
+
+# k_exc_AA <- 2
+# check, we do not use it any more.
+
 
 MW_aa = 71   # mg/mmol
 
 # Maximum velocity for enzymatic reaction 
-V_max_p450 = 9 /MW_aa*BW^0.7  # 0.235 mg/h (Tien: AA to GA mmol/hr)
+V_max_p450 = 9 /MW_aa*BW^0.7  # mg/h  from Sweenney paper, checked!
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
 
-k_0_GSH = 7
-MW_GSH = 307.32 # mg/mmol
+
+k_0_GSH = 7   # from Sweeney paper.
+MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
 
@@ -73,17 +85,17 @@ pGA_KiB = .3
 
 k_onGA_GSH = 0.8 #L/(mmol h)
 
-k_onGA_T = 0.089 #1/h
-k_onGA_B = 0.108 #1/h
+k_onGA_T = 0.089       #1/h
+k_onGA_B = 0.108       #1/h
 k_onGA_Ki = k_onAA_T/2 #1/h
-k_onGA_Li = 0.215 #1/h
+k_onGA_Li = 0.115      #1/h
 
 k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027
 k_exc_GAOH = 0.077     # 1/h
-k_exc_GA <- 1.48       # 1/h Q_Ki*0.025
+k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
 PL1 = 1.7     # !$'liver/blood partition AA'
-PL2 = 0.9    # !$'liver/blood partition GA'
+PL2 = 0.9     # !$'liver/blood partition GA'
 
 MW_ga = 87   # mg/mmol
 
@@ -107,6 +119,8 @@ KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 #The same comment as for KMG1
 
+
+# from the code, not from paper
 KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the exp. values of Sweeney
 KPT_Ki = 0.013    #  !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
 KPTR = 0.013      # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
@@ -118,7 +132,7 @@ KPTPL = 0.0039    # !'protein turnover rate in plasma'# Sweeney has 0.012 for th
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
                               pGA_TB, pGA_LiB, pGA_KiB,
-                              k_onAA_T, k_onAA_B, k_onAA_Li, k_onAA_GSH, k_onAA_Ki,
+                              k_onAA_T, k_onAA_B, k_onAA_Li,  k_onAA_Ki,
                               k_onGA_T, k_onGA_B, k_onGA_Li, k_onGA_Ki, k_exc_GA,
                               k_onGA_GSH, k_exc_AAMA, k_exc_GAMA, k_exc_GAOH,
                               k_cl_GSH, V_max_p450, KM_p450, V_max_EH, KM_EH,
@@ -154,7 +168,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
 PBPKmodelAA <- function(t,state,parameter){
   with(as.list(c(t,state,parameter)), {
     ########################################################################################  
-    #----#---#  Model for aa  #---#---#
+    #----#---#  Model for AA  #---#---#
     # concentrations blood in the organs in mg/L
     c_AA_AB <- m_AA_AB/V_AB   
     c_AA_VB <- m_AA_VB/V_VB
@@ -186,6 +200,9 @@ PBPKmodelAA <- function(t,state,parameter){
     #--------------------------------
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
+    # ????????????????????????????
+    
+    
     
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
@@ -199,27 +216,29 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h  
     dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
     
-    # protein tunr over AA in Liver
+    # protein turn over AA in Liver
     da_pb_AA_Li <- k_onAA_Li*m_AA_Li - a_pb_AA_Li * KPT_Li
     
     # Tissue
     #--------------------------------------------------------------
     # units checked -> mg/h   
     dm_AA_T <- Q_T*(c_AA_AB - c_AA_T/pAA_TB) -k_onAA_T*m_AA_T
-    # protein tunr over AA in Tussue
+    # protein turn over AA in Tussue
     da_pb_AA_T <- k_onAA_T*m_AA_T - a_pb_AA_T * KPTS
     
     # Urine
     #-------------------------------------------------------------
     # units checked -> mg/h   
-    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA # Maria: The first term should be deleted
+    dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA 
     
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_in <- k_AAuptake*m_AA_dose
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
     ########################################################################################  
+   
     ########################################################################################    
+   
     #----#---#  Model for Ga  #---#---#    
     #concentrations blood in the organs in mg/L
     c_GA_AB <- m_GA_AB/V_AB ;   c_GA_VB <- m_GA_VB/V_VB
@@ -242,7 +261,6 @@ PBPKmodelAA <- function(t,state,parameter){
     # protein tunr over AA in Kidney
     da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
     
-    
     # Liver
     #--------------------------------
     # units checked -> mg/h
@@ -263,13 +281,10 @@ PBPKmodelAA <- function(t,state,parameter){
     #-----------------------------------------------------
     dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) -k_onGA_T*m_GA_T
     
-    
-    
     dm_GA_out <- metGA_GSH + metGA_EH 
     dm_GA_in <- metAA_P450
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
-    
     
     return(list(c(dm_AA_AB,  dm_GA_AB,
                   da_pb_AA_B,
@@ -335,4 +350,4 @@ points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17
 #### Check mass balance
 #################################################################################
 
-Qbal == Q_C - Q_T - Q_Ki - Q_Li 
+Qbal = Q_C - Q_T - Q_Ki - Q_Li 
