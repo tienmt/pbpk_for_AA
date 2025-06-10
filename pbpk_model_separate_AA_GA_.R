@@ -54,28 +54,23 @@ k_cl_GSH = 0.35   # 1/h   # we should check: notation, meaning, reference
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
 
-
-
-
 k_exc_AAMA = 0.049   # 0.049 #1/h or 0.13 # this will change the shape
-
 
 # k_exc_AA <- 2
 # check, we do not use it any more.
 
-
 MW_aa = 71   # mg/mmol
+MW_ga = 87   # mg/mmol
+MW_GSH = 307.32 # mg/mmol
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # mg/h  from Sweenney paper, checked!
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
 
-
 k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
-
 
 ### PARAMETERS FOR GA
 # partition coefficient
@@ -83,23 +78,19 @@ pGA_TB = 0.97
 pGA_LiB = 0.9
 pGA_KiB = .3
 
-k_onGA_GSH = 0.8 #L/(mmol h)
+#k_onGA_GSH = 0.8 #L/(mmol h)
 
 k_onGA_T = 0.089       #1/h
 k_onGA_B = 0.108       #1/h
 k_onGA_Ki = k_onAA_T/2 #1/h
 k_onGA_Li = 0.115      #1/h
 
-k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027
-k_exc_GAOH = 0.077     # 1/h
-k_exc_GA <- .4         # 1/h Q_Ki*0.025
+k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027 # from sweeney
+k_exc_GAOH = 0.077     # 1/h  # from sweeney
+#k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
 PL1 = 1.7     # !$'liver/blood partition AA'
 PL2 = 0.9     # !$'liver/blood partition GA'
-
-MW_ga = 87   # mg/mmol
-
-MW_GSH = 307.32 # mg/mmol
 
 VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
 VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
@@ -133,8 +124,8 @@ KPTPL = 0.0039    # !'protein turnover rate in plasma'# Sweeney has 0.012 for th
 params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
                               pGA_TB, pGA_LiB, pGA_KiB,
                               k_onAA_T, k_onAA_B, k_onAA_Li,  k_onAA_Ki,
-                              k_onGA_T, k_onGA_B, k_onGA_Li, k_onGA_Ki, k_exc_GA,
-                              k_onGA_GSH, k_exc_AAMA, k_exc_GAMA, k_exc_GAOH,
+                              k_onGA_T, k_onGA_B, k_onGA_Li, k_onGA_Ki, 
+                              k_exc_AAMA, k_exc_GAMA,
                               k_cl_GSH, V_max_p450, KM_p450, V_max_EH, KM_EH,
                               k_AAuptake)
 ))
@@ -142,22 +133,15 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           a_pb_AA_B = 0 ,
           m_AA_VB = 0.0, m_GA_VB = 0.0,
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
-          m_AA_Li = 0.0, m_AAMA = 0.0,  #m_AAMA_urinary = 0.0,
+          m_AA_Li = 0.0, m_AAMA = 0.0, 
           m_GA_Li = 0.0,
           a_pb_GA_Li   = 0.0,
-          m_GAMA  = 0.0,
-          #m_GAMA_urinary = 0.0, 
+          m_GAMA  = 0.0,        #m_GAMA_urinary = 0.0, 
           m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
           m_AA_T = 0.0, m_GA_T = 0.0,
           m_GAOH = 0.0, 
-          m_AA_out = 0.0,
-          m_AA_accum = 0.0,
-          m_AA_free = 0.0,
-          m_AA_in = 0.0,
-          m_GA_out = 0.0,
-          m_GA_accum = 0.0,
-          m_GA_free = 0.0,
-          m_GA_in = 0.0,
+          m_AA_out = 0.0,  m_AA_accum = 0.0,   m_AA_free = 0.0, m_AA_in = 0.0,
+          m_GA_out = 0.0,  m_GA_accum = 0.0, m_GA_free = 0.0, m_GA_in = 0.0,
           a_pb_AA_Ki = 0,
           a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0
@@ -177,6 +161,9 @@ PBPKmodelAA <- function(t,state,parameter){
     c_AA_Ki <- m_AA_Ki/V_Ki
     
     c_GSH_Li <- m_GSH_Li/V_Li
+    # units checked -> mg/h   
+    dm_AA_dose <- -k_AAuptake*m_AA_dose
+    # ????????????????????????????
     
     # Blood
     #-----------------------------
@@ -198,9 +185,7 @@ PBPKmodelAA <- function(t,state,parameter){
     
     # Liver
     #--------------------------------
-    # units checked -> mg/h   
-    dm_AA_dose <- -k_AAuptake*m_AA_dose
-    # ????????????????????????????
+
     
     
     
@@ -236,9 +221,8 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
     ########################################################################################  
-   
+    
     ########################################################################################    
-   
     #----#---#  Model for Ga  #---#---#    
     #concentrations blood in the organs in mg/L
     c_GA_AB <- m_GA_AB/V_AB ;   c_GA_VB <- m_GA_VB/V_VB
@@ -275,7 +259,9 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h, 
     dm_GAMA <-  metGA_GSH  -m_GAMA*k_exc_GAMA
     
-    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAMA
+    #????????????????????????????????????????????
+    # we need a new k_exc_GAOH
+    dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAOH
     
     # Tissue
     #-----------------------------------------------------
@@ -317,7 +303,7 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 ################################################################
 # manual readout from Kopp and Dekant 2009
 ################################################################
-times <- seq(from = 0, to = 80, by = 0.1)
+times <- seq(from = 0, to = 60, by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
                    time = c(0.0),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
@@ -345,6 +331,7 @@ tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
+out[,'m_AA_dose']
 
 ##################################################################################
 #### Check mass balance
