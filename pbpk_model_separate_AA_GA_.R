@@ -23,8 +23,8 @@ V_Li <- BW*F_Li
 QCC = 16        #12.5 # maybe 14 or 6.5 check?
 Q_C = QCC*BW^0.75
 #FQ_P = 2.5/100 Trine: We don't have a lung compartment in this model
-FQ_Li = 0.19
-FQ_Ki = 0.255 #total - there is also an aterial flow rate 
+FQ_Li = 0.255
+FQ_Ki = 0.19 #total - there is also an aterial flow rate 
 FQ_T = 1 -( FQ_Li + FQ_Ki) # +FQ_P) Trine: We don't have a lung compartment in this model
 Q_Li <- Q_C*FQ_Li
 Q_Ki <- Q_C*FQ_Ki
@@ -33,23 +33,21 @@ Q_T <- Q_C*FQ_T
 # partition coefficient 
 ### we comback later
 pAA_TB = 0.2
-pAA_KiB = 0.2
-pAA_LiB = 0.8 
+pAA_KiB = 0.8
+pAA_LiB = 0.33 
 # Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
 # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
 # reaction rate constants 
 k_AAuptake = 1 #1/h
 
-k_onAA_T = 0.28  #1/h     # we took it from Sweenney
-k_onAA_B = 0.36  #1/h
-k_onAA_Li = 0.31 #1/h
-k_onAA_Ki = 0.83 #1/h
+k_onAA_T = 0.028  #1/h     # we took it from Sweenney
+k_onAA_B = 0.0036  #1/h
+k_onAA_Li = 0.071 #1/h
+k_onAA_Ki = 0.13 #1/h
 
-# k_syn_GSH = 0.25  #mmol/h  # we have not used this parameter
-
-#??????????????????
-k_cl_GSH = 0.35   # 1/h   # we should check: notation, meaning, reference
+# from 0.23 to 0.35
+k_cl_GSH = 0.35   # 1/h   #  reference from Maria
 
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
@@ -72,6 +70,13 @@ k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
+
+#????????????????????????????????
+#????????????????????????????????
+#????????????????????????????????
+#????????????????????????????????
+#????????????????????????????????
+#????????????????????????????????
 ### PARAMETERS FOR GA
 # partition coefficient
 pGA_TB = 0.97
@@ -185,15 +190,11 @@ PBPKmodelAA <- function(t,state,parameter){
     
     # Liver
     #--------------------------------
-
-    
-    
-    
     # units checked -> mg/h
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
     
     # unit chekced mg/h 
-    metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
+    metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ( (KMG1 + c_AA_Li) * (KMGG + c_GSH_Li) )
     # Then the units of this eq. are not mg/h, with the KMG1 & KMGG having the MW!
     
     metAA_P450 <- V_max_p450 * MW_aa*c_AA_Li/ (KM_p450+c_AA_Li)
@@ -222,6 +223,12 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
     ########################################################################################  
     
+    
+    
+    
+    
+    
+    
     ########################################################################################    
     #----#---#  Model for Ga  #---#---#    
     #concentrations blood in the organs in mg/L
@@ -241,7 +248,6 @@ PBPKmodelAA <- function(t,state,parameter){
     # Kidney
     #---------------------------------
     dm_GA_Ki <- Q_Ki*c_GA_AB -Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
-    
     # protein tunr over AA in Kidney
     da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
     
@@ -272,27 +278,19 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
     
-    return(list(c(dm_AA_AB,  dm_GA_AB,
+    return(list(c(dm_AA_AB,    dm_GA_AB,
                   da_pb_AA_B,
                   dm_AA_VB,    dm_GA_VB,
-                  dm_AA_Ki,  dm_GA_Ki,  dm_AA_dose,
+                  dm_AA_Ki,    dm_GA_Ki,    dm_AA_dose,
                   dm_AA_Li,
                   dm_AAMA,   
-                  dm_GA_Li, da_pb_GA_Li, dm_GAMA,
-                  dm_GSH_Li, dm_AA_T,   dm_GA_T,
+                  dm_GA_Li,   da_pb_GA_Li, dm_GAMA,
+                  dm_GSH_Li,  dm_AA_T,     dm_GA_T,
                   dm_GAOH,
-                  dm_AA_in,
-                  dm_AA_out,
-                  dm_AA_accum,
-                  dm_AA_free,
-                  dm_GA_out,
-                  dm_GA_accum,
-                  dm_GA_free,
-                  dm_GA_in,
-                  da_pb_AA_Ki,
-                  da_pb_AA_Li,
-                  da_pb_GA_Ki,
-                  da_pb_AA_T
+                  dm_AA_out,  dm_AA_in,   dm_AA_accum,  dm_AA_free,
+                  dm_GA_out,  dm_GA_in,   dm_GA_accum,  dm_GA_free,
+                  da_pb_AA_Ki,    da_pb_AA_Li,
+                  da_pb_GA_Ki,    da_pb_AA_T
     )))
   })
 }
