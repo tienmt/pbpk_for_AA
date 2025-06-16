@@ -47,7 +47,9 @@ k_onAA_Li = 0.071 #1/h
 k_onAA_Ki = 0.13 #1/h
 
 # from 0.23 to 0.35
-k_cl_GSH = 0.35   # 1/h   #  reference from Maria
+k_cl_GSH = 0.35   # 1/h   # the half-life (t1/2) of hepatic GSH in humans is 2-3 h,then k ranges (0.23- 0.35h-1) 
+#Reed et al 'A mathematical model of glutathione metabolism'
+#Theoretical Biology and Medical Modelling 2008,5:8    doi:10.1186/1742-4682-5-8
 
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
