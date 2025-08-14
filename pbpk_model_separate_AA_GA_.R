@@ -53,11 +53,8 @@ k_cl_GSH = 0.35   # 1/h   # the half-life (t1/2) of hepatic GSH in humans is 2-3
 
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
-
 k_exc_AAMA = 0.049   # 0.049 #1/h or 0.13 # this will change the shape
 
-# k_exc_AA <- 2
-# check, we do not use it any more.
 
 MW_aa = 71   # mg/mmol
 MW_ga = 87   # mg/mmol
@@ -71,6 +68,7 @@ Vmax_AA_GSH <- 22*BW^0.7 # from the Sweeny  fitted   mg/h
 k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
+
 
 
 #????????????????????????????????
@@ -109,9 +107,10 @@ KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
 
-KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) Trine: This should be mg. Delete the term MW_aa
-#Sweeney has this parameter for rats ans 100 mg/L why did you use this number and why divived by MW??
-##Sweeney says this is 64 mg/L in the paper##This comment is wrong ignore
+KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
+# Trine: This should be mg. Delete the term MW_aa
+# Sweeney has this parameter for rats ans 100 mg/L why did you use this number and why divived by MW??
+# Sweeney says this is 64 mg/L in the paper##This comment is wrong ignore
 KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
 ####and that this is 307 mg/L #This comment is wrong ignore
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
@@ -136,21 +135,18 @@ params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
                               k_cl_GSH, V_max_p450, KM_p450, V_max_EH, KM_EH,
                               k_AAuptake)
 ))
-yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0, 
-          a_pb_AA_B = 0 ,
+yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      a_pb_AA_B = 0 ,
           m_AA_VB = 0.0, m_GA_VB = 0.0,
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
           m_AA_Li = 0.0, m_AAMA = 0.0, 
-          m_GA_Li = 0.0,
-          a_pb_GA_Li   = 0.0,
-          m_GAMA  = 0.0,        #m_GAMA_urinary = 0.0, 
+          m_GA_Li = 0.0, a_pb_GA_Li = 0.0,
+          m_GAMA  = 0.0,       
           m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
           m_AA_T = 0.0, m_GA_T = 0.0,
           m_GAOH = 0.0, 
-          m_AA_out = 0.0,  m_AA_accum = 0.0,   m_AA_free = 0.0, m_AA_in = 0.0,
-          m_GA_out = 0.0,  m_GA_accum = 0.0, m_GA_free = 0.0, m_GA_in = 0.0,
-          a_pb_AA_Ki = 0,
-          a_pb_AA_Li = 0,
+          m_AA_out = 0.0, m_AA_in = 0.0, m_AA_accum = 0.0, m_AA_free = 0.0, 
+          m_GA_out = 0.0, m_GA_in = 0.0, m_GA_accum = 0.0, m_GA_free = 0.0, 
+          a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0
 )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -158,19 +154,17 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 PBPKmodelAA <- function(t,state,parameter){
   with(as.list(c(t,state,parameter)), {
-    ########################################################################################  
     #----#---#  Model for AA  #---#---#
     # concentrations blood in the organs in mg/L
     c_AA_AB <- m_AA_AB/V_AB   
     c_AA_VB <- m_AA_VB/V_VB
     c_AA_T <- m_AA_T/V_T
-    c_AA_Li <- m_AA_Li/V_Li*PL1 #Trine: Should we multiply with PL1 as we do for GA
+    c_AA_Li <- m_AA_Li/(V_Li*PL1) #Trine: Should we multiply with PL1 as we do for GA
     c_AA_Ki <- m_AA_Ki/V_Ki
     
     c_GSH_Li <- m_GSH_Li/V_Li
     # units checked -> mg/h   
     dm_AA_dose <- -k_AAuptake*m_AA_dose
-    # ????????????????????????????
     
     # Blood
     #-----------------------------
@@ -189,12 +183,7 @@ PBPKmodelAA <- function(t,state,parameter){
     
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
-    
-    # Liver
-    #--------------------------------
-    # units checked -> mg/h
-    dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li 
-    
+   
     # unit chekced mg/h 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ( (KMG1 + c_AA_Li) * (KMGG + c_GSH_Li) )
     # Then the units of this eq. are not mg/h, with the KMG1 & KMGG having the MW!
@@ -218,18 +207,11 @@ PBPKmodelAA <- function(t,state,parameter){
     #-------------------------------------------------------------
     # units checked -> mg/h   
     dm_AAMA <- metAA_GSH  - m_AAMA*k_exc_AAMA 
-    
+
     dm_AA_out <- metAA_P450 + metAA_GSH
     dm_AA_in <- k_AAuptake*m_AA_dose
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Li*m_AA_Li +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
-    ########################################################################################  
-    
-    
-    
-    
-    
-    
     
     ########################################################################################    
     #----#---#  Model for Ga  #---#---#    
@@ -271,29 +253,30 @@ PBPKmodelAA <- function(t,state,parameter){
     # we need a new k_exc_GAOH
     dm_GAOH <- metGA_EH -m_GAOH*k_exc_GAOH
     
-    # Tissue
-    #-----------------------------------------------------
+    # Tissue    #-----------------------------------------------------
     dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) -k_onGA_T*m_GA_T
+  
+    # Liver
+    #--------------------------------
+    # units checked -> mg/h
+    dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li  - metAA_GSH - metGA_GSH
     
     dm_GA_out <- metGA_GSH + metGA_EH 
     dm_GA_in <- metAA_P450
     dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
     dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
     
-    return(list(c(dm_AA_AB,    dm_GA_AB,
-                  da_pb_AA_B,
+    return(list(c(dm_AA_AB,    dm_GA_AB,   da_pb_AA_B,
                   dm_AA_VB,    dm_GA_VB,
                   dm_AA_Ki,    dm_GA_Ki,    dm_AA_dose,
-                  dm_AA_Li,
-                  dm_AAMA,   
+                  dm_AA_Li,    dm_AAMA,   
                   dm_GA_Li,   da_pb_GA_Li, dm_GAMA,
                   dm_GSH_Li,  dm_AA_T,     dm_GA_T,
                   dm_GAOH,
                   dm_AA_out,  dm_AA_in,   dm_AA_accum,  dm_AA_free,
                   dm_GA_out,  dm_GA_in,   dm_GA_accum,  dm_GA_free,
                   da_pb_AA_Ki,    da_pb_AA_Li,
-                  da_pb_GA_Ki,    da_pb_AA_T
-    )))
+                  da_pb_GA_Ki,    da_pb_AA_T    )))
   })
 }
 PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
@@ -331,7 +314,7 @@ tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
-out[,'m_AA_dose']
+
 
 ##################################################################################
 #### Check mass balance
