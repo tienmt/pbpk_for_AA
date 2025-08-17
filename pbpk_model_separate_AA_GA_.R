@@ -38,6 +38,13 @@ pAA_LiB = 0.33
 # Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
 # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
+###I came across this paper and has a lot of interesting toxicokinetc data. Humans are
+##exposed to acrylamide and measure urine metabolites. They measured 60% or possibly more.
+##of ingested acrylamide is absorbed. 
+##We can use half-lives, metabolite fractions, pathway ratios etc. to validate the PBPK in humans.
+## 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
+#DOI: 10.1158/1055-9965.EPI-05-0647
+
 # reaction rate constants 
 k_AAuptake = 1 #1/h
 
