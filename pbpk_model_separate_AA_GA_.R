@@ -43,7 +43,7 @@ pAA_LiB = 0.33
 ##of ingested acrylamide is absorbed. 
 ##We can use half-lives, metabolite fractions, pathway ratios etc. to validate the PBPK in humans.
 ## 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
-#DOI: 10.1158/1055-9965.EPI-05-0647
+#DOI: 10.1158/1055-9965.EPI-05-0647.
 
 # reaction rate constants 
 k_AAuptake = 1 #1/h
