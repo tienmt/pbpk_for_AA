@@ -79,9 +79,10 @@ AGSH0 = k_0_GSH * V_Li * MW_GSH
 #????????????????????????????????
 ### PARAMETERS FOR GA
 # partition coefficient
-pGA_TB = 0.97
-pGA_LiB = 0.9
-pGA_KiB = .3
+pGA_TB = 0.97 # I cannot find this number in the parameter table?
+pGA_LiB = 0.1  #0.9 # This is not in accordance with the  parameter table on GitHub, where it states 0.1?
+# Sweeny use 0.5 in the code. 
+pGA_KiB = 1 #.3 # In the parameter table this is 1.0 and in Sweeney this is 0.5 in the code and 1 in the paper. Where does this number come from?
 
 #k_onGA_GSH = 0.8 #L/(mmol h)
 
