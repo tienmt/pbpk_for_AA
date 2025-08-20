@@ -102,6 +102,7 @@ k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027 # from sweeney
 k_exc_GAOH = 0.077     # 1/h  # from sweeney
 #k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
+#Why have we another set of partition coefficients here?
 PL1 = 1.7     # !$'liver/blood partition AA'
 PL2 = 0.9     # !$'liver/blood partition GA'
 
