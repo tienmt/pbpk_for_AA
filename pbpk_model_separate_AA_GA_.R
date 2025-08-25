@@ -36,6 +36,14 @@ MW_GSH = 307.32 # mg/mmol
 k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
+
+# Maria: I came across this paper and has a lot of interesting toxicokinetc data. Humans are
+# exposed to acrylamide and measure urine metabolites. They measured 60% or possibly more.
+# of ingested acrylamide is absorbed. 
+# We can use half-lives, metabolite fractions, pathway ratios etc. to validate the PBPK in humans.
+# 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
+# DOI: 10.1158/1055-9965.EPI-05-0647
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # partition coefficient 
 ### we comback later
@@ -305,6 +313,7 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
+
 
 
 
