@@ -37,12 +37,6 @@ k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-# Maria: I came across this paper and has a lot of interesting toxicokinetc data. Humans are
-# exposed to acrylamide and measure urine metabolites. They measured 60% or possibly more.
-# of ingested acrylamide is absorbed. 
-# We can use half-lives, metabolite fractions, pathway ratios etc. to validate the PBPK in humans.
-# 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
-# DOI: 10.1158/1055-9965.EPI-05-0647
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # partition coefficient 
@@ -61,11 +55,15 @@ k_onAA_Li = 0.71 #1/h
 k_onAA_Ki = 0.13 #1/h
 
 # from 0.23 to 0.35
-k_cl_GSH = 0.035   # 1/h   #  reference from Maria
+k_cl_GSH = 0.035   # 1/h   #  Reed et al. 2008 'A mathematical model of glutathione metabolism'
+#doi:10.1186/1742-4682-5-8
 
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
-k_exc_AAMA = 0.049   # 0.049 #1/h or 0.13 # this will change the shape
+k_exc_AAMA = 0.049  ## ##MK Furh et al. report on Elimination half-life of AAMA as ~17.4 h, then k_exc_AAMA=0.0398 h-1#
+# 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
+# DOI: 10.1158/1055-9965.EPI-05-0647
+# 0.049 #1/h or 0.13 # this will change the shape
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # mg/h  from Sweenney paper, checked!
@@ -93,7 +91,8 @@ k_onGA_B = 0.108       #1/h
 k_onGA_Ki = k_onAA_T/2 #1/h
 k_onGA_Li = 0.115      #1/h
 
-k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027 # from sweeney
+k_exc_GAMA = 0.027   ##MK Furh et al. report on Elimination half-life of GAMA: ~25.1 hours, then k_exc_GAMA = 0.0276 h-1##  
+# 0.077 #1/h  # or 0.027 # from sweeney # 
 k_exc_GAOH = 0.077     # 1/h  # from sweeney
 # (removed as no longer used) k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
