@@ -37,19 +37,12 @@ k_0_GSH = 7   # from Sweeney paper.
 MW_GSH = 307.32     # mg/mmol
 AGSH0 = k_0_GSH * V_Li * MW_GSH
 
-# Maria: I came across this paper and has a lot of interesting toxicokinetc data. Humans are
-# exposed to acrylamide and measure urine metabolites. They measured 60% or possibly more.
-# of ingested acrylamide is absorbed. 
-# We can use half-lives, metabolite fractions, pathway ratios etc. to validate the PBPK in humans.
-# 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
-# DOI: 10.1158/1055-9965.EPI-05-0647
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # partition coefficient 
-### we comback later
-pAA_TB = 0.9
-pAA_KiB = 0.1
-pAA_LiB = 0.93 
+pAA_TB = .2        # Tissue::blood partition AA, Sweeney et al (2010) paper
+pAA_KiB = 0.8      # Kidney::blood partition AA, Sweeney et al (2010) paper
+pAA_LiB = 0.4      # liver::blood partition AA, Sweeney et al (2010) paper
 # Maybe we said it earlier and these parameters are not sensitive to the model, but from which paper did you get the values of these partition coefs., 
 # in the paper of Sweeney and of Li are different pAA_LiB = 0.4 and pAA_KiB = 0.8.
 
@@ -62,11 +55,15 @@ k_onAA_Li = 0.71 #1/h
 k_onAA_Ki = 0.13 #1/h
 
 # from 0.23 to 0.35
-k_cl_GSH = 0.035   # 1/h   #  reference from Maria
+k_cl_GSH = 0.035   # 1/h   #  Reed et al. 2008 'A mathematical model of glutathione metabolism'
+#doi:10.1186/1742-4682-5-8
 
 # k_onAA_GSH = 0.55 # L/(mmol h)
 # check, we do not use it any more.
-k_exc_AAMA = 0.049   # 0.049 #1/h or 0.13 # this will change the shape
+k_exc_AAMA = 0.049  ## ##MK Furh et al. report on Elimination half-life of AAMA as ~17.4 h, then k_exc_AAMA=0.0398 h-1#
+# 'Toxicokinetics of acrylamide in humans after ingestion of a defined dose in a test meal to improve risk assessment for acrylamide carcinogenicity'
+# DOI: 10.1158/1055-9965.EPI-05-0647
+# 0.049 #1/h or 0.13 # this will change the shape
 
 # Maximum velocity for enzymatic reaction 
 V_max_p450 = 9 /MW_aa*BW^0.7  # mg/h  from Sweenney paper, checked!
@@ -94,14 +91,13 @@ k_onGA_B = 0.108       #1/h
 k_onGA_Ki = k_onAA_T/2 #1/h
 k_onGA_Li = 0.115      #1/h
 
-k_exc_GAMA = 0.027     # 0.077 #1/h  # or 0.027 # from sweeney
+k_exc_GAMA = 0.027   ##MK Furh et al. report on Elimination half-life of GAMA: ~25.1 hours, then k_exc_GAMA = 0.0276 h-1##  
+# 0.077 #1/h  # or 0.027 # from sweeney # 
 k_exc_GAOH = 0.077     # 1/h  # from sweeney
 # (removed as no longer used) k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
-PL1 = 1.7     # liver/blood partition AA'
-PL2 = 0.9     # liver/blood partition GA'
 
-VMAXGC1 = 1   #!Vmax for GSH-AA conjugation mg/hr-kg^0.7
+VMAXGC1 = 22   # maximum rate of AA conjugation with GSH mg/hr-kg^0.7, Sweeney et al (2010) paper
 VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
 
 # Maximum velocity for enzymatic reaction 
@@ -111,13 +107,13 @@ KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
 
-KMG1 = 100  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
+KMG1 = 20  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
 # Trine: This should be mg. Delete the term MW_aa
 # Sweeney has this parameter for rats ans 100 mg/L why did you use this number and why divived by MW??
-# Sweeney says this is 64 mg/L in the paper##This comment is wrong ignore
-KMGG = 0.1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
+
+KMGG = .1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
 ####and that this is 307 mg/L #This comment is wrong ignore
-KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
+KMG2 = 90  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 # The same comment as for KMG1
 
 # from the code, not from paper
@@ -162,7 +158,7 @@ PBPKmodelAA <- function(t,state,parameter){
     c_AA_AB <- m_AA_AB/V_AB   
     c_AA_VB <- m_AA_VB/V_VB
     c_AA_T <- m_AA_T/V_T
-    c_AA_Li <- m_AA_Li/(V_Li*PL1) #Trine: Should we multiply with PL1 as we do for GA
+    c_AA_Li <- m_AA_Li/V_Li #Trine: Should we multiply with PL1 as we do for GA
     c_AA_Ki <- m_AA_Ki/V_Ki
     
     c_GSH_Li <- m_GSH_Li/V_Li
@@ -186,8 +182,7 @@ PBPKmodelAA <- function(t,state,parameter){
    
     # unit chekced mg/h 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ( (KMG1 + c_AA_Li) * (KMGG + c_GSH_Li) )
-    # Then the units of this eq. are not mg/h, with the KMG1 & KMGG having the MW!
-    
+
     metAA_P450 <- V_max_p450 * MW_aa * c_AA_Li/ (KM_p450 + c_AA_Li)
     
     # units checked -> mg/h  
@@ -216,9 +211,10 @@ PBPKmodelAA <- function(t,state,parameter){
     ########################################################################################    
     #-GA-#-GA-#  Model for GA  #-GA-#-GA-#    
     #concentrations blood in the organs in mg/L
-    c_GA_AB <- m_GA_AB/V_AB ;   c_GA_VB <- m_GA_VB/V_VB
+    c_GA_AB <- m_GA_AB/V_AB ;   
+    c_GA_VB <- m_GA_VB/V_VB
     c_GA_T <- m_GA_T/V_T
-    c_GA_Li <- m_GA_Li/(V_Li*PL2)
+    c_GA_Li <- m_GA_Li/V_Li
     c_GA_Ki <- m_GA_Ki/V_Ki
     
     # Blood
@@ -313,7 +309,6 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
 
 
 
