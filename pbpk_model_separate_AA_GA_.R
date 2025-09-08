@@ -81,8 +81,8 @@ Vmax_AA_GSH <- 24*BW^0.7 # from the Sweeny  fitted   mg/h
 #????????????????????????????????
 ### PARAMETERS FOR GA
 # partition coefficient
-pGA_TB = 0.97
-pGA_LiB = 0.9
+pGA_TB = 1.35 # Have been calculated from the Doerge et al 2005 paper on TK in mice
+pGA_LiB = 0.63 # Have been calculated from the Doerge et al 2005 paper on TK in mice
 pGA_KiB = .3
 
 #k_onGA_GSH = 0.8 #L/(mmol h)
