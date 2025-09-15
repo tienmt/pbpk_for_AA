@@ -224,7 +224,8 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_GA_VB <- Q_T*(c_GA_T/pGA_TB) + Q_Li*(c_GA_Li/pGA_LiB) + Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB - k_onGA_B*m_GA_VB
     # units checked -> mg/h   
-    da_pb_AA_B <- k_onGA_B*m_AA_AB + k_onGA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for GA here in masses and rates are mislabeled
+    da_pb_AA_B <- k_onGA_B*m_AA_AB + k_onGA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for GA here in masses and rates 
+    #are mislabeled
     
     # Kidney
     
