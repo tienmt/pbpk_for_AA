@@ -72,13 +72,6 @@ Vmax_AA_GSH <- 24*BW^0.7 # from the Sweeny  fitted   mg/h
 
 
 
-
-#????????????????????????????????
-#????????????????????????????????
-#????????????????????????????????
-#????????????????????????????????
-#????????????????????????????????
-#????????????????????????????????
 ### PARAMETERS FOR GA
 # partition coefficient
 pGA_TB = 1.35 # Have been calculated from the Doerge et al 2005 paper on TK in mice
@@ -105,7 +98,7 @@ V_max_EH = 20 /MW_ga*BW^0.7
 KM_p450 = 10.0
 KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
-Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny  fitted   mg/h
+Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny ( Vmax_GC2 )  fitted   mg/h
 
 KMG1 = 20  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
 # Trine: This should be mg. Delete the term MW_aa
@@ -119,10 +112,10 @@ KMG2 = 90  #!Km with respect to GA for GSH conjugation mM. Trine: This should be
 # from the code, not from paper
 KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the exp. values of Sweeney
 KPT_Ki = 0.013    # !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
-KPTR = 0.013      # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
-KPTS = 0.0039     # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
-KPTRB = 0.0039    # !'protein turnover rate in rbc'# how did we get that?
-KPTPL = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
+KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
+KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
+KPTRB  = 0.0039   # !'protein turnover rate in rbc'# how did we get that?
+KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -147,7 +140,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      a_pb_AA_B = 0 ,
           m_GA_out = 0.0, m_GA_in = 0.0, m_GA_accum = 0.0, m_GA_free = 0.0, 
           a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, a_pb_GA_B = 0, a_pb_GA_T = 0
-)
+          )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # PBPK model for Acrylamide 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -171,18 +164,18 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_AB <- Q_C*(c_AA_VB - c_AA_AB) - k_onAA_B*m_AA_AB
     dm_AA_VB <- Q_T*(c_AA_T/pAA_TB) + Q_Li*(c_AA_Li/pAA_LiB) + Q_Ki*(c_AA_Ki/pAA_KiB) - Q_C*c_AA_VB -k_onAA_B*m_AA_VB
     # Trine: I added this. Can we make an overall turnover rate in blood? Is this correct? 
-    da_pb_GA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for AA here and of GA in masses and rates are mislabeled
-    ## correct here and in the GA eqs. 
+    da_pb_AA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - a_pb_AA_B*KPTRB
+    
     # Kidney
     #---------------------------------
     # units checked -> mg/h   
     dm_AA_Ki <- Q_Ki*c_AA_AB -Q_Ki*(c_AA_Ki/pAA_KiB) - k_onAA_Ki*m_AA_Ki 
     # protein tunr over AA in Kidney
     da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
-   
+    
     # unit chekced mg/h 
     metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ( (KMG1 + c_AA_Li) * (KMGG + c_GSH_Li) )
-
+    
     metAA_P450 <- V_max_p450 * MW_aa * c_AA_Li/ (KM_p450 + c_AA_Li)
     
     # units checked -> mg/h  
@@ -201,13 +194,13 @@ PBPKmodelAA <- function(t,state,parameter){
     #-------------------------------------------------------------
     # units checked -> mg/h   
     dm_AAMA <- metAA_GSH - m_AAMA*k_exc_AAMA 
-
+    
     dm_AA_out <- metAA_P450 + metAA_GSH + k_onAA_Li*m_AA_Li
     dm_AA_in <- k_AAuptake * m_AA_dose
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Ki*m_AA_Ki
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
-
-      #--------------------------------------------------------------
+    
+    #--------------------------------------------------------------
     ########################################################################################    
     #-GA-#-GA-#  Model for GA  #-GA-#-GA-#    
     #concentrations blood in the organs in mg/L
@@ -220,17 +213,15 @@ PBPKmodelAA <- function(t,state,parameter){
     # Blood
     #-----------------------------
     # units checked -> mg/h   
-    dm_GA_AB <- Q_C*(c_GA_VB - c_GA_AB) -k_onGA_B*m_GA_AB
+    dm_GA_AB <- Q_C * (c_GA_VB - c_GA_AB) - k_onGA_B*m_GA_AB
     # units checked -> mg/h   
-    dm_GA_VB <- Q_T*(c_GA_T/pGA_TB) + Q_Li*(c_GA_Li/pGA_LiB) + Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB - k_onGA_B*m_GA_VB
+    dm_GA_VB <- Q_T * (c_GA_T/pGA_TB) + Q_Li*(c_GA_Li/pGA_LiB) + Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB - k_onGA_B*m_GA_VB
     # units checked -> mg/h   
-    da_pb_AA_B <- k_onGA_B*m_AA_AB + k_onGA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for GA here in masses and rates are mislabeled
-    
-    # Kidney
+    da_pb_GA_B <- k_onGA_B*m_GA_AB + k_onGA_B*m_GA_VB - a_pb_GA_B * KPTRB
     
     # Kidney
     #---------------------------------
-    dm_GA_Ki <- Q_Ki*c_GA_AB -Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
+    dm_GA_Ki <- Q_Ki*c_GA_AB - Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
     # protein tunr over AA in Kidney
     da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
     
@@ -305,12 +296,11 @@ plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.1)
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.005) )
+plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.04) ); grid()
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
 
 
