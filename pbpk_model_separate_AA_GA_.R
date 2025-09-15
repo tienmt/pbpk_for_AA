@@ -171,8 +171,8 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_AB <- Q_C*(c_AA_VB - c_AA_AB) - k_onAA_B*m_AA_AB
     dm_AA_VB <- Q_T*(c_AA_T/pAA_TB) + Q_Li*(c_AA_Li/pAA_LiB) + Q_Ki*(c_AA_Ki/pAA_KiB) - Q_C*c_AA_VB -k_onAA_B*m_AA_VB
     # Trine: I added this. Can we make an overall turnover rate in blood? Is this correct? 
-    da_pb_GA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - a_pb_GA_B*KPTRB
-    
+    da_pb_GA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for AA here and of GA in masses and rates are mislabeled
+    ## correct here and in the GA eqs. 
     # Kidney
     #---------------------------------
     # units checked -> mg/h   
@@ -224,7 +224,9 @@ PBPKmodelAA <- function(t,state,parameter){
     # units checked -> mg/h   
     dm_GA_VB <- Q_T*(c_GA_T/pGA_TB) + Q_Li*(c_GA_Li/pGA_LiB) + Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB - k_onGA_B*m_GA_VB
     # units checked -> mg/h   
-    da_pb_AA_B <- k_onGA_B*m_AA_AB + k_onGA_B*m_AA_VB - a_pb_GA_B*KPTRB
+    da_pb_AA_B <- k_onGA_B*m_AA_AB + k_onGA_B*m_AA_VB - a_pb_GA_B*KPTRB ## The terms for GA here in masses and rates are mislabeled
+    
+    # Kidney
     
     # Kidney
     #---------------------------------
