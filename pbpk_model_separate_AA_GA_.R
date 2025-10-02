@@ -100,13 +100,13 @@ KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
 Vmax_GA_GSH <- 20*BW^0.7 # from the Sweeny ( Vmax_GC2 )  fitted   mg/h
 
-KMG1 = 20  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
+KMG1 = 50  #!Km with respect to AA for GSH conjugation mg/L (from Sweeny code) 
 # Trine: This should be mg. Delete the term MW_aa
 # Sweeney has this parameter for rats ans 100 mg/L why did you use this number and why divived by MW??
 
 KMGG = .1/MW_GSH        # !KM with respect to GSH for AA or GA conjugation with GSH mmol/L. Trine: should be mg/L
 ####and that this is 307 mg/L #This comment is wrong ignore
-KMG2 = 90  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
+KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 # The same comment as for KMG1
 
 # from the code, not from paper
@@ -126,7 +126,7 @@ params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
                               k_exc_AAMA, k_exc_GAMA,
                               k_cl_GSH, V_max_p450, KM_p450, V_max_EH, KM_EH,
                               k_AAuptake)
-                              ))
+))
 yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      a_pb_AA_B = 0 ,
           m_AA_VB = 0.0, m_GA_VB = 0.0,
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
@@ -140,7 +140,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      a_pb_AA_B = 0 ,
           m_GA_out = 0.0, m_GA_in = 0.0, m_GA_accum = 0.0, m_GA_free = 0.0, 
           a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, a_pb_GA_B = 0, a_pb_GA_T = 0
-          )
+)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # PBPK model for Acrylamide 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -232,13 +232,13 @@ PBPKmodelAA <- function(t,state,parameter){
     metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
     # units checked -> mg/h 
     dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
+
     # protein tunr over GA in Liver
     da_pb_GA_Li = k_onGA_Li*m_GA_Li - a_pb_GA_Li*KPT_Li 
     
     # units checked -> mg/h, 
     dm_GAMA <-  metGA_GSH  -m_GAMA*k_exc_GAMA
     
-    #????????????????????????????????????????????
     # we need a new k_exc_GAOH
     dm_GAOH <- metGA_EH - m_GAOH*k_exc_GAOH
     
@@ -246,9 +246,7 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) - k_onGA_T*m_GA_T
     da_pb_GA_T <- k_onGA_T*m_GA_T - a_pb_GA_T * KPTS
     
-    # Liver
-    #--------------------------------
-    # units checked -> mg/h
+    # units checked -> mg/h, it effects both GA and AA, reduce GSH in the liver
     dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li - metAA_GSH - metGA_GSH
     
     dm_GA_out <- metGA_GSH + metGA_EH 
@@ -272,6 +270,167 @@ PBPKmodelAA <- function(t,state,parameter){
 PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 
 
+
+# PBPK model for Acrylamide (AA) with GA and mass-balance diagnostics
+PBPKmodelAA <- function(t, state, parameter) {
+  with(as.list(c(t, state, parameter)), {
+    
+    #----#---#  Model for AA  #---#---#
+    # concentrations blood in the organs in mg/L
+    c_AA_AB <- m_AA_AB / V_AB
+    c_AA_VB <- m_AA_VB / V_VB
+    c_AA_T  <- m_AA_T  / V_T
+    c_AA_Li <- m_AA_Li / V_Li   # Trine: Should we multiply with PL1 as we do for GA
+    c_AA_Ki <- m_AA_Ki / V_Ki
+    
+    c_GSH_Li <- m_GSH_Li / V_Li
+    
+    # units checked -> mg/h
+    dm_AA_dose <- - k_AAuptake * m_AA_dose
+    
+    # Blood
+    # units checked -> mg/h
+    dm_AA_AB <- Q_C * (c_AA_VB - c_AA_AB) - k_onAA_B * m_AA_AB
+    dm_AA_VB <- Q_T * (c_AA_T / pAA_TB) + Q_Li * (c_AA_Li / pAA_LiB) + Q_Ki * (c_AA_Ki / pAA_KiB) -
+      Q_C * c_AA_VB - k_onAA_B * m_AA_VB
+    
+    # overall turnover / bound pool in blood (diagnostic of binding turnover)
+    da_pb_AA_B <- k_onAA_B * m_AA_AB + k_onAA_B * m_AA_VB - a_pb_AA_B * KPTRB
+    
+    # Kidney
+    dm_AA_Ki <- Q_Ki * c_AA_AB - Q_Ki * (c_AA_Ki / pAA_KiB) - k_onAA_Ki * m_AA_Ki
+    # protein turnover AA in Kidney
+    da_pb_AA_Ki <- k_onAA_Ki * m_AA_Ki - a_pb_AA_Ki * KPT_Ki
+    
+    # liver metabolism (AA -> GA via P450 and AA -> AAMA via GSH conjugation)
+    metAA_GSH  <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ((KMG1 + c_AA_Li) * (KMGG + c_GSH_Li))
+    metAA_P450 <- V_max_p450 * MW_aa * c_AA_Li / (KM_p450 + c_AA_Li)
+    
+    # Liver mass balance for AA
+    dm_AA_Li <- Q_Li * (c_AA_AB - c_AA_Li / pAA_LiB) + k_AAuptake * m_AA_dose -
+      k_onAA_Li * m_AA_Li - metAA_P450 - metAA_GSH
+    # protein turnover AA in Liver
+    da_pb_AA_Li <- k_onAA_Li * m_AA_Li - a_pb_AA_Li * KPT_Li
+    
+    # Tissue
+    dm_AA_T <- Q_T * (c_AA_AB - c_AA_T / pAA_TB) - k_onAA_T * m_AA_T
+    # protein turnover AA in Tissue
+    da_pb_AA_T <- k_onAA_T * m_AA_T - a_pb_AA_T * KPTS
+    
+    # Urine / metabolite AAMA (from AA via GSH conjugation)
+    dm_AAMA <- metAA_GSH - m_AAMA * k_exc_AAMA
+    
+    # Some useful diagnostic lumped rates for AA
+    dm_AA_out   <- metAA_P450 + metAA_GSH + k_onAA_Li * m_AA_Li        # AA lost from AA pool (met+binding)
+    dm_AA_in    <- k_AAuptake * m_AA_dose                             # uptake from dose reservoir
+    dm_AA_accum <- k_onAA_B * m_AA_AB + k_onAA_B * m_AA_VB +
+      k_onAA_T * m_AA_T + k_onAA_Ki * m_AA_Ki           # binding accumulation rates
+    dm_AA_free  <- dm_AA_AB + dm_AA_VB + dm_AA_T + dm_AA_Li + dm_AA_Ki
+    
+    ########################################################################################
+    #-GA-#-GA-#  Model for GA  #-GA-#-GA-#    
+    # concentrations blood in the organs in mg/L
+    c_GA_AB <- m_GA_AB / V_AB
+    c_GA_VB <- m_GA_VB / V_VB
+    c_GA_T  <- m_GA_T  / V_T
+    c_GA_Li <- m_GA_Li / V_Li
+    c_GA_Ki <- m_GA_Ki / V_Ki
+    
+    # Blood
+    dm_GA_AB <- Q_C * (c_GA_VB - c_GA_AB) - k_onGA_B * m_GA_AB
+    dm_GA_VB <- Q_T * (c_GA_T / pGA_TB) + Q_Li * (c_GA_Li / pGA_LiB) + Q_Ki * (c_GA_Ki / pGA_KiB) -
+      Q_C * c_GA_VB - k_onGA_B * m_GA_VB
+    
+    da_pb_GA_B <- k_onGA_B * m_GA_AB + k_onGA_B * m_GA_VB - a_pb_GA_B * KPTRB
+    
+    # Kidney
+    dm_GA_Ki <- Q_Ki * c_GA_AB - Q_Ki * (c_GA_Ki / pGA_KiB) - k_onGA_Ki * m_GA_Ki
+    da_pb_GA_Ki <- k_onGA_Ki * m_GA_Ki - a_pb_GA_Ki * KPT_Ki
+    
+    # Liver metabolism for GA (and formation from AA via p450)
+    metGA_GSH <- Vmax_GA_GSH * c_GSH_Li * c_GA_Li / ((c_GA_Li + KMG2) * (c_GSH_Li + KMGG))
+    metGA_EH  <- V_max_EH * MW_ga * c_GA_Li / (KM_EH + c_GA_Li)
+    
+    dm_GA_Li <- Q_Li * (c_GA_AB - c_GA_Li / pGA_LiB) - k_onGA_Li * m_GA_Li +
+      metAA_P450 - metGA_GSH - metGA_EH
+    # protein turnover GA in Liver
+    da_pb_GA_Li <- k_onGA_Li * m_GA_Li - a_pb_GA_Li * KPT_Li
+    
+    # GA metabolites (excretable)
+    dm_GAMA  <- metGA_GSH - m_GAMA * k_exc_GAMA
+    dm_GAOH  <- metGA_EH  - m_GAOH * k_exc_GAOH
+    
+    # Tissue
+    dm_GA_T <- Q_T * (c_GA_AB - c_GA_T / pGA_TB) - k_onGA_T * m_GA_T
+    da_pb_GA_T <- k_onGA_T * m_GA_T - a_pb_GA_T * KPTS
+    
+    # GSH pool in liver (consumed by both AA and GA conjugation)
+    dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH * m_GSH_Li - metAA_GSH - metGA_GSH
+    
+    # Useful GA diagnostics
+    dm_GA_out   <- metGA_GSH + metGA_EH
+    dm_GA_in    <- metAA_P450
+    dm_GA_accum <- k_onGA_B * m_GA_AB + k_onGA_B * m_GA_VB +
+      k_onGA_T * m_GA_T + k_onGA_Li * m_GA_Li + k_onGA_Ki * m_GA_Ki
+    dm_GA_free  <- dm_GA_AB + dm_GA_VB + dm_GA_T + dm_GA_Li + dm_GA_Ki
+    
+    # -------------------------------------------------------------------------
+    # Mass-balance diagnostics (do not change dynamics; returned as named outputs)
+    # Total mass pools (AA, GA, and combined AA+GA + metabolites)
+    total_AA_mass <- m_AA_dose + m_AA_AB + m_AA_VB + m_AA_T + m_AA_Li + m_AA_Ki + m_AAMA
+    total_GA_mass <- m_GA_AB + m_GA_VB + m_GA_T + m_GA_Li + m_GA_Ki + m_GAMA + m_GAOH
+    
+    # Rate of change of total AA (sum of AA derivatives)
+    dm_total_AA <- dm_AA_dose + dm_AA_AB + dm_AA_VB + dm_AA_T + dm_AA_Li + dm_AA_Ki + dm_AAMA
+    # Rate of change of total GA (sum of GA derivatives)
+    dm_total_GA <- dm_GA_AB + dm_GA_VB + dm_GA_T + dm_GA_Li + dm_GA_Ki + dm_GAMA + dm_GAOH
+    
+    # Combined pool derivative (AA + GA + excretable metabolites)
+    combined_deriv <- dm_total_AA + dm_total_GA
+    
+    # Total excretion (rate at which mass leaves the modeled system)
+    total_excretion_rate <- m_AAMA * k_exc_AAMA + m_GAMA * k_exc_GAMA + m_GAOH * k_exc_GAOH
+    
+    # For perfect mass conservation: combined_deriv + total_excretion_rate should be ~ 0
+    # (because conversions AA->GA are internal transfers; only excretion removes mass)
+    mass_balance_residual <- combined_deriv + total_excretion_rate
+    
+    # Flow/volume diagnostics
+    flow_residual <- Q_C - (Q_T + Q_Li + Q_Ki)   # if non-zero, flows don't sum to cardiac output
+    volume_sum    <- V_AB + V_VB + V_T + V_Li + V_Ki  # check if sum matches expected total blood/tissue volume
+    
+    # -------------------------------------------------------------------------
+    # Return: first element must be vector of derivatives (in the same order as `state`)
+    derivs <- c(
+      dm_AA_AB,    dm_GA_AB,   da_pb_AA_B,
+      dm_AA_VB,    dm_GA_VB,
+      dm_AA_Ki,    dm_GA_Ki,   dm_AA_dose,
+      dm_AA_Li,    dm_AAMA,
+      dm_GA_Li,    da_pb_GA_Li, dm_GAMA,
+      dm_GSH_Li,   dm_AA_T,     dm_GA_T,
+      dm_GAOH,
+      dm_AA_out,   dm_AA_in,   dm_AA_accum, dm_AA_free,
+      dm_GA_out,   dm_GA_in,   dm_GA_accum, dm_GA_free,
+      da_pb_AA_Ki, da_pb_AA_Li,
+      da_pb_GA_Ki, da_pb_AA_T, da_pb_GA_B,  da_pb_GA_T
+    )
+    
+    # Named diagnostics returned as additional items (deSolve will include them in output)
+    return(list(
+      derivs,
+      total_AA_mass = total_AA_mass,
+      total_GA_mass = total_GA_mass,
+      combined_total_mass = total_AA_mass + total_GA_mass,
+      dm_total_AA = dm_total_AA,
+      dm_total_GA = dm_total_GA,
+      combined_deriv = combined_deriv,
+      total_excretion_rate = total_excretion_rate,
+      mass_balance_residual = mass_balance_residual,
+      flow_residual = flow_residual,
+      volume_sum = volume_sum
+    ))
+  })
+}
 
 ################################################################
 # manual readout from Kopp and Dekant 2009
@@ -302,5 +461,4 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
 
