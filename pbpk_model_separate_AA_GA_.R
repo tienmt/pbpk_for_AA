@@ -198,6 +198,8 @@ PBPKmodelAA <- function(t,state,parameter){
     dm_AA_out <- metAA_P450 + metAA_GSH + k_onAA_Li*m_AA_Li
     dm_AA_in <- k_AAuptake * m_AA_dose
     dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Ki*m_AA_Ki
+    #### the accumulation of AA in Liver via protein binding is missing.
+    ### The term of K_onAA_Li*m_AA_Li should be added
     dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
     
     #--------------------------------------------------------------
