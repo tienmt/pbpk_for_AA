@@ -90,11 +90,8 @@ k_exc_GAOH = 0.077     # 1/h  # from sweeney
 # (removed as no longer used) k_exc_GA <- .4         # 1/h Q_Ki*0.025
 
 
-VMAXGC1 = 22   # maximum rate of AA conjugation with GSH mg/hr-kg^0.7, Sweeney et al (2010) paper
-VMAXG1 = VMAXGC1/MW_aa*BW**0.7    # !$'Liver AA-GSH rate'
-
 # Maximum velocity for enzymatic reaction 
-V_max_EH = 20 /MW_ga*BW^0.7  
+V_max_EH = 20 *BW^0.7  
 KM_p450 = 10.0
 KM_EH = 100.0
 # maximum rate of GA and AA conjugation with GSH (mg/(h BW^0.7))
@@ -142,138 +139,8 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      a_pb_AA_B = 0 ,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, a_pb_GA_B = 0, a_pb_GA_T = 0
 )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# PBPK model for Acrylamide 
-# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-PBPKmodelAA <- function(t,state,parameter){
-  with(as.list(c(t,state,parameter)), {
-    #----#---#  Model for AA  #---#---#
-    # concentrations blood in the organs in mg/L
-    c_AA_AB <- m_AA_AB/V_AB   
-    c_AA_VB <- m_AA_VB/V_VB
-    c_AA_T <- m_AA_T/V_T
-    c_AA_Li <- m_AA_Li/V_Li #Trine: Should we multiply with PL1 as we do for GA
-    c_AA_Ki <- m_AA_Ki/V_Ki
-    
-    c_GSH_Li <- m_GSH_Li/V_Li
-    # units checked -> mg/h   
-    dm_AA_dose <- - k_AAuptake*m_AA_dose
-    
-    # Blood
-    #-----------------------------
-    # units checked -> mg/h   
-    dm_AA_AB <- Q_C*(c_AA_VB - c_AA_AB) - k_onAA_B*m_AA_AB
-    dm_AA_VB <- Q_T*(c_AA_T/pAA_TB) + Q_Li*(c_AA_Li/pAA_LiB) + Q_Ki*(c_AA_Ki/pAA_KiB) - Q_C*c_AA_VB -k_onAA_B*m_AA_VB
-    # Trine: I added this. Can we make an overall turnover rate in blood? Is this correct? 
-    da_pb_AA_B <- k_onAA_B*m_AA_AB + k_onAA_B*m_AA_VB - a_pb_AA_B*KPTRB
-    
-    # Kidney
-    #---------------------------------
-    # units checked -> mg/h   
-    dm_AA_Ki <- Q_Ki*c_AA_AB -Q_Ki*(c_AA_Ki/pAA_KiB) - k_onAA_Ki*m_AA_Ki 
-    # protein tunr over AA in Kidney
-    da_pb_AA_Ki <- k_onAA_Ki*m_AA_Ki - a_pb_AA_Ki*KPT_Ki
-    
-    # unit chekced mg/h 
-    metAA_GSH <- Vmax_AA_GSH * c_AA_Li * c_GSH_Li / ( (KMG1 + c_AA_Li) * (KMGG + c_GSH_Li) )
-    
-    metAA_P450 <- V_max_p450 * MW_aa * c_AA_Li/ (KM_p450 + c_AA_Li)
-    
-    # units checked -> mg/h  
-    dm_AA_Li <- Q_Li*(c_AA_AB - c_AA_Li/pAA_LiB) + k_AAuptake*m_AA_dose - k_onAA_Li*m_AA_Li  - metAA_P450 - metAA_GSH 
-    # protein turn over AA in Liver
-    da_pb_AA_Li <- k_onAA_Li*m_AA_Li - a_pb_AA_Li * KPT_Li
-    
-    # Tissue
-    #--------------------------------------------------------------
-    # units checked -> mg/h   
-    dm_AA_T <- Q_T*(c_AA_AB - c_AA_T/pAA_TB) - k_onAA_T*m_AA_T
-    # protein turn over AA in Tussue
-    da_pb_AA_T <- k_onAA_T*m_AA_T - a_pb_AA_T * KPTS
-    
-    # Urine
-    #-------------------------------------------------------------
-    # units checked -> mg/h   
-    dm_AAMA <- metAA_GSH - m_AAMA*k_exc_AAMA 
-    
-    dm_AA_out <- metAA_P450 + metAA_GSH + k_onAA_Li*m_AA_Li
-    dm_AA_in <- k_AAuptake * m_AA_dose
-    dm_AA_accum <- k_onAA_B*m_AA_AB +k_onAA_B*m_AA_VB +k_onAA_T*m_AA_T +k_onAA_Ki*m_AA_Ki
-    #### the accumulation of AA in Liver via protein binding is missing.
-    ### The term of K_onAA_Li*m_AA_Li should be added
-    dm_AA_free <- dm_AA_AB + dm_AA_VB +dm_AA_T +dm_AA_Li +dm_AA_Ki
-    
-    #--------------------------------------------------------------
-    ########################################################################################    
-    #-GA-#-GA-#  Model for GA  #-GA-#-GA-#    
-    #concentrations blood in the organs in mg/L
-    c_GA_AB <- m_GA_AB/V_AB ;   
-    c_GA_VB <- m_GA_VB/V_VB
-    c_GA_T <- m_GA_T/V_T
-    c_GA_Li <- m_GA_Li/V_Li
-    c_GA_Ki <- m_GA_Ki/V_Ki
-    
-    # Blood
-    #-----------------------------
-    # units checked -> mg/h   
-    dm_GA_AB <- Q_C * (c_GA_VB - c_GA_AB) - k_onGA_B*m_GA_AB
-    # units checked -> mg/h   
-    dm_GA_VB <- Q_T * (c_GA_T/pGA_TB) + Q_Li*(c_GA_Li/pGA_LiB) + Q_Ki*(c_GA_Ki/pGA_KiB) - Q_C*c_GA_VB - k_onGA_B*m_GA_VB
-    # units checked -> mg/h   
-    da_pb_GA_B <- k_onGA_B*m_GA_AB + k_onGA_B*m_GA_VB - a_pb_GA_B * KPTRB
-    
-    # Kidney
-    #---------------------------------
-    dm_GA_Ki <- Q_Ki*c_GA_AB - Q_Ki*(c_GA_Ki/pGA_KiB) -k_onGA_Ki*m_GA_Ki 
-    # protein tunr over AA in Kidney
-    da_pb_GA_Ki <- k_onGA_Ki*m_GA_Ki - a_pb_GA_Ki*KPT_Ki
-    
-    # Liver
-    #--------------------------------
-    # units checked -> mg/h
-    metGA_GSH <- Vmax_GA_GSH * c_GSH_Li *c_GA_Li / (c_GA_Li + KMG2)/(c_GSH_Li + KMGG)
-    metGA_EH <- V_max_EH *MW_ga *c_GA_Li / (KM_EH + c_GA_Li)
-    # units checked -> mg/h 
-    dm_GA_Li <- Q_Li*(c_GA_AB - c_GA_Li/pGA_LiB) - k_onGA_Li*m_GA_Li + metAA_P450 - metGA_GSH -metGA_EH 
-
-    # protein tunr over GA in Liver
-    da_pb_GA_Li = k_onGA_Li*m_GA_Li - a_pb_GA_Li*KPT_Li 
-    
-    # units checked -> mg/h, 
-    dm_GAMA <-  metGA_GSH  -m_GAMA*k_exc_GAMA
-    
-    # we need a new k_exc_GAOH
-    dm_GAOH <- metGA_EH - m_GAOH*k_exc_GAOH
-    
-    # Tissue    #-----------------------------------------------------
-    dm_GA_T <- Q_T*(c_GA_AB - c_GA_T/pGA_TB) - k_onGA_T*m_GA_T
-    da_pb_GA_T <- k_onGA_T*m_GA_T - a_pb_GA_T * KPTS
-    
-    # units checked -> mg/h, it effects both GA and AA, reduce GSH in the liver
-    dm_GSH_Li <- k_0_GSH * V_Li * MW_GSH - k_cl_GSH*m_GSH_Li - metAA_GSH - metGA_GSH
-    
-    dm_GA_out <- metGA_GSH + metGA_EH 
-    dm_GA_in <- metAA_P450
-    dm_GA_accum <- k_onGA_B*m_GA_AB +k_onGA_B*m_GA_VB +k_onGA_T*m_GA_T +k_onGA_Li*m_GA_Li +k_onGA_Ki*m_GA_Ki
-    dm_GA_free <- dm_GA_AB + dm_GA_VB +dm_GA_T +dm_GA_Li +dm_GA_Ki 
-    
-    return(list(c(dm_AA_AB,    dm_GA_AB,   da_pb_AA_B,
-                  dm_AA_VB,    dm_GA_VB,
-                  dm_AA_Ki,    dm_GA_Ki,    dm_AA_dose,
-                  dm_AA_Li,    dm_AAMA,   
-                  dm_GA_Li,   da_pb_GA_Li, dm_GAMA,
-                  dm_GSH_Li,  dm_AA_T,     dm_GA_T,
-                  dm_GAOH,
-                  dm_AA_out,  dm_AA_in,   dm_AA_accum,  dm_AA_free,
-                  dm_GA_out,  dm_GA_in,   dm_GA_accum,  dm_GA_free,
-                  da_pb_AA_Ki,    da_pb_AA_Li,
-                  da_pb_GA_Ki,    da_pb_AA_T, da_pb_GA_B , da_pb_GA_T   )))
-  })
-}
-PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
-
-
-
 # PBPK model for Acrylamide (AA) with GA and mass-balance diagnostics
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 PBPKmodelAA <- function(t, state, parameter) {
   with(as.list(c(t, state, parameter)), {
     
@@ -282,7 +149,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     c_AA_AB <- m_AA_AB / V_AB
     c_AA_VB <- m_AA_VB / V_VB
     c_AA_T  <- m_AA_T  / V_T
-    c_AA_Li <- m_AA_Li / V_Li   # Trine: Should we multiply with PL1 as we do for GA
+    c_AA_Li <- m_AA_Li / V_Li   
     c_AA_Ki <- m_AA_Ki / V_Ki
     
     c_GSH_Li <- m_GSH_Li / V_Li
@@ -294,7 +161,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     # units checked -> mg/h
     dm_AA_AB <- Q_C * (c_AA_VB - c_AA_AB) - k_onAA_B * m_AA_AB
     dm_AA_VB <- Q_T * (c_AA_T / pAA_TB) + Q_Li * (c_AA_Li / pAA_LiB) + Q_Ki * (c_AA_Ki / pAA_KiB) -
-      Q_C * c_AA_VB - k_onAA_B * m_AA_VB
+                  Q_C * c_AA_VB - k_onAA_B * m_AA_VB
     
     # overall turnover / bound pool in blood (diagnostic of binding turnover)
     da_pb_AA_B <- k_onAA_B * m_AA_AB + k_onAA_B * m_AA_VB - a_pb_AA_B * KPTRB
@@ -310,7 +177,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     
     # Liver mass balance for AA
     dm_AA_Li <- Q_Li * (c_AA_AB - c_AA_Li / pAA_LiB) + k_AAuptake * m_AA_dose -
-      k_onAA_Li * m_AA_Li - metAA_P450 - metAA_GSH
+                  k_onAA_Li * m_AA_Li - metAA_P450 - metAA_GSH
     # protein turnover AA in Liver
     da_pb_AA_Li <- k_onAA_Li * m_AA_Li - a_pb_AA_Li * KPT_Li
     
@@ -325,8 +192,8 @@ PBPKmodelAA <- function(t, state, parameter) {
     # Some useful diagnostic lumped rates for AA
     dm_AA_out   <- metAA_P450 + metAA_GSH + k_onAA_Li * m_AA_Li        # AA lost from AA pool (met+binding)
     dm_AA_in    <- k_AAuptake * m_AA_dose                             # uptake from dose reservoir
-    dm_AA_accum <- k_onAA_B * m_AA_AB + k_onAA_B * m_AA_VB +
-      k_onAA_T * m_AA_T + k_onAA_Ki * m_AA_Ki           # binding accumulation rates
+    dm_AA_accum <- k_onAA_B * m_AA_AB + k_onAA_B * m_AA_VB +  k_onAA_Li * m_AA_Li+
+                    k_onAA_T * m_AA_T + k_onAA_Ki * m_AA_Ki           # binding accumulation rates
     dm_AA_free  <- dm_AA_AB + dm_AA_VB + dm_AA_T + dm_AA_Li + dm_AA_Ki
     
     ########################################################################################
@@ -341,7 +208,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     # Blood
     dm_GA_AB <- Q_C * (c_GA_VB - c_GA_AB) - k_onGA_B * m_GA_AB
     dm_GA_VB <- Q_T * (c_GA_T / pGA_TB) + Q_Li * (c_GA_Li / pGA_LiB) + Q_Ki * (c_GA_Ki / pGA_KiB) -
-      Q_C * c_GA_VB - k_onGA_B * m_GA_VB
+                  Q_C * c_GA_VB - k_onGA_B * m_GA_VB
     
     da_pb_GA_B <- k_onGA_B * m_GA_AB + k_onGA_B * m_GA_VB - a_pb_GA_B * KPTRB
     
@@ -351,10 +218,10 @@ PBPKmodelAA <- function(t, state, parameter) {
     
     # Liver metabolism for GA (and formation from AA via p450)
     metGA_GSH <- Vmax_GA_GSH * c_GSH_Li * c_GA_Li / ((c_GA_Li + KMG2) * (c_GSH_Li + KMGG))
-    metGA_EH  <- V_max_EH * MW_ga * c_GA_Li / (KM_EH + c_GA_Li)
+    metGA_EH  <- V_max_EH  * c_GA_Li / (KM_EH + c_GA_Li)
     
     dm_GA_Li <- Q_Li * (c_GA_AB - c_GA_Li / pGA_LiB) - k_onGA_Li * m_GA_Li +
-      metAA_P450 - metGA_GSH - metGA_EH
+                      metAA_P450 - metGA_GSH - metGA_EH
     # protein turnover GA in Liver
     da_pb_GA_Li <- k_onGA_Li * m_GA_Li - a_pb_GA_Li * KPT_Li
     
@@ -373,8 +240,13 @@ PBPKmodelAA <- function(t, state, parameter) {
     dm_GA_out   <- metGA_GSH + metGA_EH
     dm_GA_in    <- metAA_P450
     dm_GA_accum <- k_onGA_B * m_GA_AB + k_onGA_B * m_GA_VB +
-      k_onGA_T * m_GA_T + k_onGA_Li * m_GA_Li + k_onGA_Ki * m_GA_Ki
+                      k_onGA_T * m_GA_T + k_onGA_Li * m_GA_Li + k_onGA_Ki * m_GA_Ki
     dm_GA_free  <- dm_GA_AB + dm_GA_VB + dm_GA_T + dm_GA_Li + dm_GA_Ki
+    
+    
+    
+    
+    
     
     # -------------------------------------------------------------------------
     # Mass-balance diagnostics (do not change dynamics; returned as named outputs)
@@ -433,10 +305,11 @@ PBPKmodelAA <- function(t, state, parameter) {
     ))
   })
 }
+PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 
-################################################################
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # manual readout from Kopp and Dekant 2009
-################################################################
+# ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 times <- seq(from = 0, to = 60, by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
                    time = c(0.0),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
