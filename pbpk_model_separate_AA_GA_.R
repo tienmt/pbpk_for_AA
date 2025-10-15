@@ -13,7 +13,7 @@ F_Li = 0.026
 F_Ki = 0.0044
 F_T = 1-(F_B+F_Li+F_Ki)
 # organ volumes in L
-V_AB <- BW*F_B*F_B_AB 
+V_AB <- BW*F_B*F_B_AB
 V_VB <- BW*F_B*F_B_VB 
 V_T <- BW*F_T
 V_Ki <- BW*F_Ki
@@ -252,7 +252,9 @@ PBPKmodelAA <- function(t, state, parameter) {
     # Mass-balance diagnostics (do not change dynamics; returned as named outputs)
     # Total mass pools (AA, GA, and combined AA+GA + metabolites)
     total_AA_mass <- m_AA_dose + m_AA_AB + m_AA_VB + m_AA_T + m_AA_Li + m_AA_Ki + m_AAMA
+    print(total_AA_mass)
     total_GA_mass <- m_GA_AB + m_GA_VB + m_GA_T + m_GA_Li + m_GA_Ki + m_GAMA + m_GAOH
+    print(total_GA_mass)
     
     # Rate of change of total AA (sum of AA derivatives)
     dm_total_AA <- dm_AA_dose + dm_AA_AB + dm_AA_VB + dm_AA_T + dm_AA_Li + dm_AA_Ki + dm_AAMA
