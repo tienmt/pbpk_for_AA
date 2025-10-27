@@ -105,10 +105,10 @@ KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should b
 # from the code, not from paper
 KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the exp. values of Sweeney
 KPT_Ki = 0.013    # !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
-KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
+#KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
 KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
 KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that?
-KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
+#KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -247,7 +247,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     # -------------------------------------------------------------------------
     # Mass-balance diagnostics (do not change dynamics; returned as named outputs)
     # Total mass pools (AA, GA, and combined AA+GA + metabolites)
-    total_AA_mass <- m_AA_dose + m_AA_AB + m_AA_VB + m_AA_T + m_AA_Li + m_AA_Ki + m_AAMA
+    total_AA_mass <- m_AA_AB + m_AA_VB + m_AA_T + m_AA_Li + m_AA_Ki + m_AAMA
     total_GA_mass <- m_GA_AB + m_GA_VB + m_GA_T + m_GA_Li + m_GA_Ki + m_GAMA + m_GAOH
     
     # Rate of change of total AA (sum of AA derivatives)
@@ -306,9 +306,10 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # manual readout from Kopp and Dekant 2009
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-times <- seq(from = 0, to = 120, by = 0.1)
+n_days = 240
+times <- seq(from = 0, to = n_days * 24 , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
-                   time = c(0),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
+                   time = 24* c(0:120),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
 yobs_urine <- data.frame(
   time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
@@ -332,3 +333,9 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
+
+plot(out)
+
+
+
+
