@@ -114,7 +114,8 @@ KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the 
 KPT_Ki = 0.013    # !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
 #KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
 KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
-KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that?
+KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that? # Average life span of RBC is 120 days
+# then 0.00035 h⁻¹ is  correct  protein turnover rate in human RBCs.doi: 10.3389/fphys.2021.655393
 KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 
    kpb_Li = 0.1    #!protein binding in liver
