@@ -15,12 +15,6 @@ F_T = 1-(F_B+F_Li+F_Ki)
 # organ volumes in L
 V_AB <- BW*F_B*F_B_AB 
 V_VB <- BW*F_B*F_B_VB 
-F_BC = 0.44    #'Fraction blood cells'
-F_BS = 1-F_BC  #'Fraction serum'
-        V_AB_RBC = V_AB*F_BC
-        V_AB_PL  = V_AB*F_BS
-        V_VB_RBC = V_VB*F_BC
-        V_VB_PL  = V_VB*F_BS
 
 V_T <- BW*F_T
 V_Ki <- BW*F_Ki
@@ -114,8 +108,7 @@ KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the 
 KPT_Ki = 0.013    # !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
 #KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
 KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
-KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that? # Average life span of RBC is 120 days
-# then 0.00035 h⁻¹ is  correct  protein turnover rate in human RBCs.doi: 10.3389/fphys.2021.655393.
+KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that?
 KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 
    kpb_Li = 0.1    #!protein binding in liver
@@ -131,6 +124,11 @@ kpbr2 = kpbr1/reactratio    #!protein binding in rpt
 kpbs2 = kpbs1/reactratio    #!protein binding in spt
 kpbrb2 = kpbrb1/reactratio  #!protein binding in rbc (hemoglobin binding)
 kpbpl2 = kpbpl1/reactratio  #!protein binding in plasma 
+
+K_FORM_AA_VAL = 7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM AA-hr
+K_FORM_GA_VAL = 34000  * 1.6 * 10^(-10) /MW_ga   # !fmol GA-val/mg globin per mM GA-hr
+K_REM_AA_VAL = 0.00231  # !removal of AA-val adducts from RBC per hr
+K_REM_GA_VAL = 0.00231  # !removal of GA-val adducts from RBC per hr
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -143,8 +141,6 @@ params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
                               k_AAuptake)
 ))
 yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      
-          a_pb_AA_RBC_VB = 0, a_pb_AA_PL_VB =0,
-          a_pb_AA_RBC_AB = 0, a_pb_AA_PL_AB =0,
           m_AA_VB = 0.0, m_GA_VB = 0.0,
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
           m_AA_Li = 0.0, m_AAMA = 0.0, 
@@ -155,9 +151,11 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           m_GAOH = 0.0, 
           a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, 
-          a_pb_GA_RBC_VB = 0, a_pb_GA_PL_VB =0,
-          a_pb_GA_RBC_AB = 0, a_pb_GA_PL_AB =0,
-          a_pb_GA_T = 0
+          a_pb_GA_T = 0,
+          a_pb_AA_B = 0,
+          a_pb_GA_B = 0,
+          m_AA_Hb = 0.0,   # <-- AA-hemoglobin adduct
+          m_GA_Hb = 0.0    # <-- GA-hemoglobin adduct
 )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # PBPK model for Acrylamide (AA) with GA and mass-balance diagnostics
@@ -183,31 +181,14 @@ PBPKmodelAA <- function(t, state, parameter) {
     dm_AA_AB <- Q_C * (c_AA_VB - c_AA_AB) - k_onAA_B * m_AA_AB
     dm_AA_VB <- Q_T * (c_AA_T / pAA_TB) + Q_Li * (c_AA_Li / pAA_LiB) + Q_Ki * (c_AA_Ki / pAA_KiB) -
       Q_C * c_AA_VB - k_onAA_B * m_AA_VB
-    
-    # Concentrations of bound GA (for completeness)
-    c_pb_AA_RBC_VB <- a_pb_AA_RBC_VB / V_VB_RBC
-    c_pb_AA_PL_VB  <- a_pb_AA_PL_VB  / V_VB_PL
-    # Concentrations of bound GA (arterial)
-    c_pb_AA_RBC_AB <- a_pb_AA_RBC_AB / V_AB_RBC
-    c_pb_AA_PL_AB  <- a_pb_AA_PL_AB  / V_AB_PL
-    # RBC binding (venous)
-    da_pb_AA_RBC_VB <- kpbrb1 * c_AA_VB * V_VB_RBC  - a_pb_AA_RBC_VB * KPTRB   # elimination
-                        + Q_C * (c_pb_AA_RBC_AB - c_pb_AA_RBC_VB)  # exchange
-    
-    # Plasma binding (venous)
-    da_pb_AA_PL_VB <- kpbpl1 * c_AA_VB * V_VB_PL  - a_pb_AA_PL_VB * KPTPL      # elimination
-                        + Q_C * (c_pb_AA_PL_AB - c_pb_AA_PL_VB)  # exchange
-    
-    # RBC binding (arterial blood)
-    da_pb_AA_RBC_AB <- kpbrb1 * c_AA_AB * V_AB_RBC - a_pb_AA_RBC_AB * KPTRB   # elimination
-                       + Q_C * (c_pb_AA_RBC_VB - c_pb_AA_RBC_AB)  # exchange
-    # Plasma binding (arterial)
-    da_pb_AA_PL_AB <- kpbpl1 * c_AA_AB * V_AB_PL - a_pb_AA_PL_AB * KPTPL      # elimination
-                        + Q_C * (c_pb_AA_PL_VB - c_pb_AA_PL_AB)  # exchange
+    # overall turnover / bound pool in blood (diagnostic of binding turnover)
+    da_pb_AA_B <- k_onAA_B * c_AA_AB - a_pb_AA_B * KPTRB + Q_C * (c_AA_VB - c_AA_AB)
+
+    # !terminal valine hemoglobin adducts
+    dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
     
     
-    
-    
+
     
     # Kidney
     dm_AA_Ki <- Q_Ki * c_AA_AB - Q_Ki * (c_AA_Ki / pAA_KiB) - k_onAA_Ki * m_AA_Ki
@@ -247,38 +228,13 @@ PBPKmodelAA <- function(t, state, parameter) {
     dm_GA_VB <- Q_T * (c_GA_T / pGA_TB) + Q_Li * (c_GA_Li / pGA_LiB) + Q_Ki * (c_GA_Ki / pGA_KiB) -
       Q_C * c_GA_VB - k_onGA_B * m_GA_VB
     
+    # overall turnover / bound pool in blood (diagnostic of binding turnover)
+    da_pb_GA_B <- k_onGA_B * c_GA_AB - a_pb_GA_B * KPTRB + Q_C * (c_GA_VB - c_GA_AB)
     
-    # Concentrations of bound GA (for completeness)
-    c_pb_GA_RBC_VB <- a_pb_GA_RBC_VB / V_VB_RBC
-    c_pb_GA_PL_VB  <- a_pb_GA_PL_VB  / V_VB_PL
-    # Concentrations of bound GA (arterial)
-    c_pb_GA_RBC_AB <- a_pb_GA_RBC_AB / V_AB_RBC
-    c_pb_GA_PL_AB  <- a_pb_GA_PL_AB  / V_AB_PL
-    # RBC binding (venous)
-    da_pb_GA_RBC_VB <- kpbrb2 * c_GA_VB * V_VB_RBC  - a_pb_GA_RBC_VB * KPTRB   # elimination
-                      + Q_C * (c_pb_GA_RBC_AB - c_pb_GA_RBC_VB)  # exchange
-    
-    # Plasma binding (venous)
-    da_pb_GA_PL_VB <- kpbpl2 * c_GA_VB * V_VB_PL  - a_pb_GA_PL_VB * KPTPL      # elimination
-                      + Q_C * (c_pb_GA_PL_AB - c_pb_GA_PL_VB)  # exchange
+    # hemoglobin
+    dm_GA_Hb <- K_FORM_GA_VAL * c_GA_VB - K_REM_GA_VAL * m_GA_Hb
 
-    # RBC binding (arterial blood)
-    da_pb_GA_RBC_AB <- kpbrb2 * c_GA_AB * V_AB_RBC - a_pb_GA_RBC_AB * KPTRB   # elimination
-                        + Q_C * (c_pb_GA_RBC_VB - c_pb_GA_RBC_AB)  # exchange
-    # Plasma binding (arterial)
-    da_pb_GA_PL_AB <- kpbpl2 * c_GA_AB * V_AB_PL - a_pb_GA_PL_AB * KPTPL      # elimination
-                       + Q_C * (c_pb_GA_PL_VB - c_pb_GA_PL_AB)  # exchange
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+       
     # Kidney
     dm_GA_Ki <- Q_Ki * c_GA_AB - Q_Ki * (c_GA_Ki / pGA_KiB) - k_onGA_Ki * m_GA_Ki
     da_pb_GA_Ki <- kpbk_ki * m_GA_Ki - a_pb_GA_Ki * KPT_Ki
@@ -335,8 +291,6 @@ PBPKmodelAA <- function(t, state, parameter) {
     # Return: first element must be vector of derivatives (in the same order as `state`)
     derivs <- c(
       dm_AA_AB,    dm_GA_AB,   
-      da_pb_AA_RBC_VB,  da_pb_AA_PL_VB,  
-      da_pb_AA_RBC_AB,  da_pb_AA_PL_AB,
       dm_AA_VB,    dm_GA_VB,
       dm_AA_Ki,    dm_GA_Ki,   dm_AA_dose,
       dm_AA_Li,    dm_AAMA,
@@ -345,9 +299,11 @@ PBPKmodelAA <- function(t, state, parameter) {
       dm_GAOH,
       da_pb_AA_Ki, da_pb_AA_Li,
       da_pb_GA_Ki, da_pb_AA_T, 
-      da_pb_GA_RBC_VB,  da_pb_GA_PL_VB,  
-      da_pb_GA_RBC_AB,  da_pb_GA_PL_AB,
-      da_pb_GA_T
+      da_pb_GA_T,
+      da_pb_AA_B,
+      da_pb_GA_B,
+      dm_AA_Hb ,   # <-- AA-hemoglobin adduct
+      dm_GA_Hb     # <-- GA-hemoglobin adduct
     )
     
     # Named diagnostics returned as additional items (deSolve will include them in output)
@@ -371,10 +327,10 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # manual readout from Kopp and Dekant 2009
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-n_days = 20
-times <- seq(from = 0, to = n_days * 24 , by = 0.1)
+n_days = 1
+times <- seq(from = 0, to = n_days * 24 * 5 , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
-                   time = 24* c(0:10),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
+                   time = 24* c(0:(n_days/2)),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
 yobs_urine <- data.frame(
   time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
@@ -399,7 +355,9 @@ tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
-plot(out)
+
+cat('Press ENTER to plot more:............'); plot(out)
+
 
 
 
