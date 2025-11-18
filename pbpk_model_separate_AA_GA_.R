@@ -183,6 +183,18 @@ PBPKmodelAA <- function(t, state, parameter) {
       Q_C * c_AA_VB - k_onAA_B * m_AA_VB
     # overall turnover / bound pool in blood (diagnostic of binding turnover)
     da_pb_AA_B <- k_onAA_B * c_AA_AB - a_pb_AA_B * KPTRB + Q_C * (c_AA_VB - c_AA_AB)
+    
+    # I think this eqs. is not correct, c_AA_AB is only arterial AA concentration not of the whole blood,
+    #Also the units are wrong of the first term, you need to multiply by V, and scale it to the
+    #total blood volume
+    #I think the last Q_C representing free chemical transport, not irreversible bound adducts, 
+    # is not needed in the more simplistic and for the whole blood.
+    #I think this would be more accurate: da_pb_AA_B <- k_onAA_B * (c_AA_AB + c_AA_VB)/2 * V_BC - a_pb_AA_B * KPTRB
+    #total blood cell volume (V_BC)
+    #V_BC <- (V_AB + V_VB) * F_BC # 
+    #F_BC <- 0.44  # Fraction of blood volume that is RBCs, Hematocrit
+    
+    
 
     # !terminal valine hemoglobin adducts
     dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
