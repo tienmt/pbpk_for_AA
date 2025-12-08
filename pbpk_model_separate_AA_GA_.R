@@ -136,9 +136,7 @@ K_FORM_AA_VAL = 7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM 
 # Hb in adults (~ 150 mg/mL blood) and average blood volume is 5L
 #Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
 #K_FORM_AA_VAL = 3500 X (Mglobin mg / MWaa (mg/mmol)) x MWaa-Val mg (mg/mmol) x 10-15
-# = 1.61×10−5 mg adducts / (mg/L AA h) 
-
-
+# = 1.61×10−5 mg adducts / (mg/L AA h) #
 
 
 K_FORM_GA_VAL = 34000  * 1.6 * 10^(-10) /MW_ga   # !fmol GA-val/mg globin per mM GA-hr
@@ -200,7 +198,6 @@ PBPKmodelAA <- function(t, state, parameter) {
     # similar change from suggest to change from - k_onAA_B * m_AA_VB to - k_onAA_B * c_AA_VB * V_VB
     # overall turnover / bound pool in blood (diagnostic of binding turnover)
   
-
     # I suggest we write that
     #V_RBC_AB <- V_AB * F_BC
     #V_RBC_VB <- V_VB * F_BC
