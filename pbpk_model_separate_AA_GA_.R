@@ -126,6 +126,21 @@ kpbrb2 = kpbrb1/reactratio  #!protein binding in rbc (hemoglobin binding)
 kpbpl2 = kpbpl1/reactratio  #!protein binding in plasma 
 
 K_FORM_AA_VAL = 7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM AA-hr
+#The units are given as CONSTANT   KFORMAAVAL = 7500  !fmol AA-val/mg globin per mM AA-hr
+## K_FORM original = 7500 fmol/(mg globin·mM AA ·h)
+# MW_AA = 71.08 mg/mmol (acrylamide)
+#MW_AA–Val = 204 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
+#Globin pool = 750 g # 
+#Analytical and Bioanalytical Chemistry (2022) 414:5805–5815
+#https://doi.org/10.1007/s00216-022-04143-y
+# Hb in adults (~ 150 mg/mL blood) and average blood volume is 5L
+#Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
+#K_FORM_AA_VAL = 3500 X (Mglobin mg / MWaa (mg/mmol)) x MWaa-Val mg (mg/mmol) x 10-15
+# = 1.61×10−5 mg adducts / (mg/L AA h) 
+
+
+
+
 K_FORM_GA_VAL = 34000  * 1.6 * 10^(-10) /MW_ga   # !fmol GA-val/mg globin per mM GA-hr
 K_REM_AA_VAL = 0.00231  # !removal of AA-val adducts from RBC per hr
 K_REM_GA_VAL = 0.00231  # !removal of GA-val adducts from RBC per hr
@@ -184,8 +199,7 @@ PBPKmodelAA <- function(t, state, parameter) {
       Q_C * c_AA_VB - k_onAA_B * m_AA_VB
     # similar change from suggest to change from - k_onAA_B * m_AA_VB to - k_onAA_B * c_AA_VB * V_VB
     # overall turnover / bound pool in blood (diagnostic of binding turnover)
-    da_pb_AA_B <- k_onAA_B * c_AA_AB - a_pb_AA_B * KPTRB + Q_C * (c_AA_VB - c_AA_AB)
-    
+  
 
     # I suggest we write that
     #V_RBC_AB <- V_AB * F_BC
