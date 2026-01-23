@@ -111,12 +111,12 @@ KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.005
 KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that?
 KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
 
-   kpb_Li = 0.1    #!protein binding in liver
-   kpbk_ki = 0.08   #!protein binding in kidney
-   kpbr1 = 0.08  # !protein binding in rpt
-   kpbs1 = 0.08   #!protein binding in spt
-   kpbrb1 = 0.01 # !protein binding in rbc (hemoglobin binding)
-   kpbpl1 = 0.01   #!protein binding in plasma 
+kpb_Li = 0.1    #!protein binding in liver
+kpbk_ki = 0.08   #!protein binding in kidney
+kpbr1 = 0.08  # !protein binding in rpt
+kpbs1 = 0.08   #!protein binding in spt
+kpbrb1 = 0.01 # !protein binding in rbc (hemoglobin binding)
+kpbpl1 = 0.01   #!protein binding in plasma 
 reactratio = 2.0  #!reactivity ratio with protein, AA/GA
 kpb_Li_2 = kpb_Li/reactratio    #!protein binding in liver
 kpbk2 = kpbk_ki/reactratio    #!protein binding in kidney
@@ -165,7 +165,6 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, 
           a_pb_GA_T = 0,
-          a_pb_AA_B = 0,
           a_pb_GA_B = 0,
           m_AA_Hb = 0.0,   # <-- AA-hemoglobin adduct
           m_GA_Hb = 0.0    # <-- GA-hemoglobin adduct
@@ -197,7 +196,7 @@ PBPKmodelAA <- function(t, state, parameter) {
       Q_C * c_AA_VB - k_onAA_B * m_AA_VB
     # similar change from suggest to change from - k_onAA_B * m_AA_VB to - k_onAA_B * c_AA_VB * V_VB
     # overall turnover / bound pool in blood (diagnostic of binding turnover)
-  
+    
     # I suggest we write that
     #V_RBC_AB <- V_AB * F_BC
     #V_RBC_VB <- V_VB * F_BC
@@ -218,7 +217,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
     
     
-
+    
     
     # Kidney
     dm_AA_Ki <- Q_Ki * c_AA_AB - Q_Ki * (c_AA_Ki / pAA_KiB) - k_onAA_Ki * m_AA_Ki
@@ -263,8 +262,8 @@ PBPKmodelAA <- function(t, state, parameter) {
     
     # hemoglobin
     dm_GA_Hb <- K_FORM_GA_VAL * c_GA_VB - K_REM_GA_VAL * m_GA_Hb
-
-       
+    
+    
     # Kidney
     dm_GA_Ki <- Q_Ki * c_GA_AB - Q_Ki * (c_GA_Ki / pGA_KiB) - k_onGA_Ki * m_GA_Ki
     da_pb_GA_Ki <- kpbk_ki * m_GA_Ki - a_pb_GA_Ki * KPT_Ki
@@ -330,7 +329,6 @@ PBPKmodelAA <- function(t, state, parameter) {
       da_pb_AA_Ki, da_pb_AA_Li,
       da_pb_GA_Ki, da_pb_AA_T, 
       da_pb_GA_T,
-      da_pb_AA_B,
       da_pb_GA_B,
       dm_AA_Hb ,   # <-- AA-hemoglobin adduct
       dm_GA_Hb     # <-- GA-hemoglobin adduct
@@ -387,6 +385,7 @@ points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17
 
 
 cat('Press ENTER to plot more:............'); plot(out)
+
 
 
 
