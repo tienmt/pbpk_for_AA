@@ -125,17 +125,18 @@ kpbs2 = kpbs1/reactratio    #!protein binding in spt
 kpbrb2 = kpbrb1/reactratio  #!protein binding in rbc (hemoglobin binding)
 kpbpl2 = kpbpl1/reactratio  #!protein binding in plasma 
 
-K_FORM_AA_VAL = 7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM AA-hr
-#The units are given as CONSTANT   KFORMAAVAL = 7500  !fmol AA-val/mg globin per mM AA-hr
+K_FORM_AA_VAL = 0.01857
+#  7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM AA-hr
+# The units are given as CONSTANT   KFORMAAVAL = 7500  !fmol AA-val/mg globin per mM AA-hr
 ## K_FORM original = 7500 fmol/(mg globin·mM AA ·h)
 # MW_AA = 71.08 mg/mmol (acrylamide)
-#MW_AA–Val = 204 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
-#Globin pool = 750 g # 
-#Analytical and Bioanalytical Chemistry (2022) 414:5805–5815
-#https://doi.org/10.1007/s00216-022-04143-y
+# MW_AA–Val = 204 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
+# Globin pool = 750 g # 
+# Analytical and Bioanalytical Chemistry (2022) 414:5805–5815
+# https://doi.org/10.1007/s00216-022-04143-y
 # Hb in adults (~ 150 mg/mL blood) and average blood volume is 5L
-#Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
-#K_FORM_AA_VAL = 3500 X (Mglobin mg / MWaa (mg/mmol)) x MWaa-Val mg (mg/mmol) x 10-15
+# Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
+# K_FORM_AA_VAL = 3500 X (Mglobin mg / MWaa (mg/mmol)) x MWaa-Val mg (mg/mmol) x 10-15
 # = 1.61×10−5 mg adducts / (mg/L AA h) #
 
 
@@ -355,7 +356,7 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # manual readout from Kopp and Dekant 2009
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-n_days = 1
+n_days = 5
 times <- seq(from = 0, to = n_days * 24 * 5 , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
                    time = 24* c(0:(n_days/2)),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
@@ -367,7 +368,7 @@ yobs_urine <- data.frame(
 )
 
 # plot for AAMA in urinary
-par(mfrow=c(2,2),mar=c(2,4,.5,.5))
+par(mfrow=c(3,2),mar=c(2,4,.5,.5))
 plot(out[,'time'], out[,'m_AAMA']   ,type = 'l',xlab = 'time', ylab = 'aama', ylim = c(0,.02) )
 points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4) ; grid()
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
@@ -382,6 +383,16 @@ time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
 tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
+
+# plot for GAMA 
+plot(out[,'time'], out[,'m_AA_Hb']  ,type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 2*max(out[,'m_AA_Hb'] )) )
+points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
+time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
+tamtam = out[,'m_AA_Hb'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 10*max(out[,'m_AA_Hb']) ) ); grid()
+points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
+
+
 
 
 cat('Press ENTER to plot more:............'); plot(out)
