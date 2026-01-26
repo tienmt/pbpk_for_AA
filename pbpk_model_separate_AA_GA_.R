@@ -356,7 +356,9 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # manual readout from Kopp and Dekant 2009
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-n_days = 5
+
+n_days = 5  # simulate for 5 days
+
 times <- seq(from = 0, to = n_days * 24 * 5 , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
                    time = 24* c(0:(n_days/2)),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
@@ -384,12 +386,17 @@ tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
 plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
-# plot for GAMA 
-plot(out[,'time'], out[,'m_AA_Hb']  ,type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 2*max(out[,'m_AA_Hb'] )) )
+
+
+# plot for hemoglobin adducts AA 
+
+plot(out[,'time'], out[,'m_AA_Hb']* 6.53 * 10^6
+     ,type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 2*max(out[,'m_AA_Hb'] ))* 6.53 * 10^6 )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_AA_Hb'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 10*max(out[,'m_AA_Hb']) ) ); grid()
+tamtam = out[,'m_AA_Hb'][time_points_measure_unrine ]* 6.53 * 10^6
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', 
+     ylim = c(0, 5*max(out[,'m_AA_Hb']) )* 6.53 * 10^6 ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
