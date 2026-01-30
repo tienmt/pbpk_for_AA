@@ -130,17 +130,28 @@ K_FORM_AA_VAL = 0.01857
 # The units are given as CONSTANT   KFORMAAVAL = 7500  !fmol AA-val/mg globin per mM AA-hr
 ## K_FORM original = 7500 fmol/(mg globin·mM AA ·h)
 # MW_AA = 71.08 mg/mmol (acrylamide)
-# MW_AA–Val = 204 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
-# Globin pool = 750 g # 
+# MW_AA–Val = 234 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
 # Analytical and Bioanalytical Chemistry (2022) 414:5805–5815
 # https://doi.org/10.1007/s00216-022-04143-y
 # Hb in adults (~ 150 mg/mL blood) and average blood volume is 5L
 # Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
-# K_FORM_AA_VAL = 3500 X (Mglobin mg / MWaa (mg/mmol)) x MWaa-Val mg (mg/mmol) x 10-15
-# = 1.61×10−5 mg adducts / (mg/L AA h) #
+#fmol to mol  7500 fmol = 7500 × 10⁻¹⁵ = 7.5 × 10⁻¹² mol
+#mol AA-val to mg
+#MW of AA-val adduct = 234.28 g/mol = 234280 mg/mol
+#7.5 × 10⁻¹² mol × 234280 mg/mol = 1.76 × 10⁻⁶ mg AA-val
+#Multiply by total globin
+#Total globin = 150 g/L × 5 L = 750,000 mg
+#1.76 × 10⁻⁶ mg per mg globin × 750,000 mg = 1.32 mg/h (per 1 mM AA)
+#Convert mM AA to mg/L AA
+#MW of acrylamide = 71.08 mg/mmol
+#1 mM = 71.08 mg/L
+#1.32 mg/h ÷ 71.08 mg/L = 0.01857 mg adduct / (mg/L AA · h)
+#K_FORM_AA_VAL (converted) = 0.01857 mg adduct / (mg/L AA · h)
+
 
 
 K_FORM_GA_VAL = 34000  * 1.6 * 10^(-10) /MW_ga   # !fmol GA-val/mg globin per mM GA-hr
+#Similarly K_FORM_GA_VAL (conv) = 0.0686 mg adduct /(mg/L GA h")
 K_REM_AA_VAL = 0.00231  # !removal of AA-val adducts from RBC per hr
 K_REM_GA_VAL = 0.00231  # !removal of GA-val adducts from RBC per hr
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -389,6 +400,10 @@ points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17
 
 
 # plot for hemoglobin adducts AA 
+
+# This plot is not correct, we plot together two different Biomarkers does it make sens?
+# Also there is an error with the [time_points_measure_unrine], it extracts row indices 
+# and not times the plot is not correct....
 
 plot(out[,'time'], out[,'m_AA_Hb']* 6.53 * 10^6
      ,type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 2*max(out[,'m_AA_Hb'] ))* 6.53 * 10^6 )
