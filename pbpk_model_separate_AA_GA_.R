@@ -125,35 +125,32 @@ kpbs2 = kpbs1/reactratio    #!protein binding in spt
 kpbrb2 = kpbrb1/reactratio  #!protein binding in rbc (hemoglobin binding)
 kpbpl2 = kpbpl1/reactratio  #!protein binding in plasma 
 
-K_FORM_AA_VAL = 0.01857
-#  7500 * 1.6 * 10^(-10) /MW_aa    # !fmol AA-val/mg globin per mM AA-hr
-# The units are given as CONSTANT   KFORMAAVAL = 7500  !fmol AA-val/mg globin per mM AA-hr
-## K_FORM original = 7500 fmol/(mg globin·mM AA ·h)
-# MW_AA = 71.08 mg/mmol (acrylamide)
-# MW_AA–Val = 234 mg/mmol # https://www.chemicalbook.com/ChemicalProductProperty_EN_CB01305805.htm
-# Analytical and Bioanalytical Chemistry (2022) 414:5805–5815
-# https://doi.org/10.1007/s00216-022-04143-y
-# Hb in adults (~ 150 mg/mL blood) and average blood volume is 5L
-# Mglobin = Globbin poon=150 g/L×5 L=750 g hemoglobin (≈ globin) or 750,000 mg
-#fmol to mol  7500 fmol = 7500 × 10⁻¹⁵ = 7.5 × 10⁻¹² mol
-#mol AA-val to mg
-#MW of AA-val adduct = 234.28 g/mol = 234280 mg/mol
-#7.5 × 10⁻¹² mol × 234280 mg/mol = 1.76 × 10⁻⁶ mg AA-val
-#Multiply by total globin
-#Total globin = 150 g/L × 5 L = 750,000 mg
-#1.76 × 10⁻⁶ mg per mg globin × 750,000 mg = 1.32 mg/h (per 1 mM AA)
-#Convert mM AA to mg/L AA
-#MW of acrylamide = 71.08 mg/mmol
-#1 mM = 71.08 mg/L
-#1.32 mg/h ÷ 71.08 mg/L = 0.01857 mg adduct / (mg/L AA · h)
-#K_FORM_AA_VAL (converted) = 0.01857 mg adduct / (mg/L AA · h)
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# CORRECTED HB ADDUCT PARAMETERS
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# 1. Total Globin Calculation (Standard Reference Man)
+# Hb concentration ~150 mg/mL (or g/L). Blood Volume ~5 L.
+Total_Globin_mg <- 150 * 5000 # = 750,000 mg
+
+# 2. Formation Constants (L/h)
+# Literature k_val = 7500 fmol / (mg_globin * mM_AA * h)
+# Conversion logic: K (L/h) = k_val * Total_Globin * 1e-12
+K_FORM_AA_VAL <- 7500 * Total_Globin_mg * 1e-12  # Result: ~0.0056 L/h
+
+# Literature k_val_GA = 34000 fmol / (mg_globin * mM_GA * h)
+K_FORM_GA_VAL <- 34000 * Total_Globin_mg * 1e-12 # Result: ~0.0255 L/h
+
+# 3. Removal Constants (1/h)
+# Adducts are removed with RBC turnover (Lifespan ~120 days)
+# Should match KPTRB (Protein turnover in RBC)
+K_REM_AA_VAL <- KPTRB # 0.00035
+K_REM_GA_VAL <- KPTRB # 0.00035
 
 
 
-K_FORM_GA_VAL = 34000  * 1.6 * 10^(-10) /MW_ga   # !fmol GA-val/mg globin per mM GA-hr
-#Similarly K_FORM_GA_VAL (conv) = 0.0686 mg adduct /(mg/L GA h")
-K_REM_AA_VAL = 0.00231  # !removal of AA-val adducts from RBC per hr
-K_REM_GA_VAL = 0.00231  # !removal of GA-val adducts from RBC per hr
+
+
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # create list of parameter
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -365,59 +362,39 @@ PBPKmodelAA <- function(t, state, parameter) {
 PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-# manual readout from Kopp and Dekant 2009
+# manual readout from Vikstrom 2011 InVitroAcrylamide
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 n_days = 5  # simulate for 5 days
 
-times <- seq(from = 0, to = n_days * 24 * 5 , by = 0.1)
-diet <- data.frame(var = "m_AA_dose", method = "add",
-                   time = 24* c(0:(n_days/2)),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
+times <- seq(from = 0, to = n_days * 24 * 2  , by = 0.1)
+diet <- data.frame(var = "m_AA_dose", method = "add",   #  24* c(0:(n_days/2))
+                   time = c(0, 24, 48, 72 ),  value = 11 *BW /1000 ) #  0.5 *BW /1000   # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
-yobs_urine <- data.frame(
-  time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
-  AAMA = c(0.0/1000000, 32.8/1000000, 69.5/1000000, 42.8/1000000, 45.2/1000000, 24.5/1000000, 15/1000000, 7/1000000)*234.28, #https://pubchem.ncbi.nlm.nih.gov/compound/N-Acetyl-S-_2-carbamoylethyl_-L-cysteine
-  GAMA = c(0.0, 2.15*1e-6, 3.66*1e-6, 4.38*1e-6, 6.57*1e-6, 5.26*1e-6, 3.50*1e-6, 3.0*1e-6)*250.27
-)
-
-# plot for AAMA in urinary
-par(mfrow=c(3,2),mar=c(2,4,.5,.5))
-plot(out[,'time'], out[,'m_AAMA']   ,type = 'l',xlab = 'time', ylab = 'aama', ylim = c(0,.02) )
-points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4) ; grid()
-time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.08), xlab = 'time' ); grid()
-points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
-
-# plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
-points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
-time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
-points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
 
+
+# Calculate Unit Conversion Factor: mg (model) -> pmol/g globin (y-axis)
+Total_Globin_mg <- 150 * 5000 # = 750,000 mg
+# Factor = (1e9 pmol/mmol) / (MW_aa_mg/mmol * Total_Globin_g)
+Total_Globin_g <- Total_Globin_mg / 1000 # 750 g
+conv_factor_AA <- 1e9 / (MW_aa * Total_Globin_g) 
+conv_factor_GA <- 1e9 / (MW_ga * Total_Globin_g)
+
+
+
+par(mfrow=c(1,2),mar=c(2,4,1,1))
 # plot for hemoglobin adducts AA 
+plot(out[,'time'], out[,'m_AA_Hb'] * conv_factor_AA,  # 6.53×10^6
+     type = 'l', lwd=2,  xlab = 'Time (hours)',    ylab = 'Hb Adducts (pmol/g globin)', 
+     main = 'AA Hemoglobin Adducts',    ylim = c(0, 150)) # Adjusted ylim to typical range (0-150)
+# Add reference points (ensure these values are also in pmol/g globin)
+points(c(24, 120), c(51, 110), col="blue", cex = 1.5, pch = 17) ; grid()
 
-# This plot is not correct, we plot together two different Biomarkers does it make sens?
-# Also there is an error with the [time_points_measure_unrine], it extracts row indices 
-# and not times the plot is not correct....
-
-plot(out[,'time'], out[,'m_AA_Hb']* 6.53 * 10^6
-     ,type = 'l',xlab = '', ylab = 'hemoglobin adducts', ylim = c(0, 2*max(out[,'m_AA_Hb'] ))* 6.53 * 10^6 )
-points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
-time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_AA_Hb'][time_points_measure_unrine ]* 6.53 * 10^6
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', 
+plot(out[,'time'], cumsum( out[,'m_AA_Hb'] * conv_factor_AA ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', 
      ylim = c(0, 5*max(out[,'m_AA_Hb']) )* 6.53 * 10^6 ); grid()
-points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
-
-
-
-
-cat('Press ENTER to plot more:............'); plot(out)
+points(  c(24, 120), c( 51, 110 )  , col="blue",cex = 1.5, pch = 17)
 
 
 
