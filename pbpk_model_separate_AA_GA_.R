@@ -8,6 +8,7 @@ BW = 70
 ##https://journals.sagepub.com/doi/pdf/10.1177/ANIB_32_3-4
 F_B = 0.079 
 F_B_AB = 0.35 #fraction: arterial blood of blood volume
+
 F_B_VB = 0.65 #fraction: venous blood of blood volume
 F_Li = 0.026
 F_Ki = 0.0044
@@ -223,8 +224,10 @@ PBPKmodelAA <- function(t, state, parameter) {
     
     
     # !terminal valine hemoglobin adducts
-    dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
     
+    # we define m_AA_Hb in unit as "fenta gram" adducts per mg globin
+    dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
+    # "fenta gram" adducts per mg globin
     
     
     
@@ -366,14 +369,10 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 n_days = 5  # simulate for 5 days
-
-times <- seq(from = 0, to = n_days * 24 * 2  , by = 0.1)
+times <- seq(from = 0, to = n_days * 24   , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",   #  24* c(0:(n_days/2))
                    time = c(0, 24, 48, 72 ),  value = 11 *BW /1000 ) #  0.5 *BW /1000   # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
-
-
-
 
 # Calculate Unit Conversion Factor: mg (model) -> pmol/g globin (y-axis)
 Total_Globin_mg <- 150 * 5000 # = 750,000 mg
@@ -382,17 +381,18 @@ Total_Globin_g <- Total_Globin_mg / 1000 # 750 g
 conv_factor_AA <- 1e9 / (MW_aa * Total_Globin_g) 
 conv_factor_GA <- 1e9 / (MW_ga * Total_Globin_g)
 
-
-
 par(mfrow=c(1,2),mar=c(2,4,1,1))
 # plot for hemoglobin adducts AA 
-plot(out[,'time'], out[,'m_AA_Hb'] * conv_factor_AA,  # 6.53×10^6
+plot(out[,'time'], 
+     out[,'m_AA_Hb'] * conv_factor_AA ,  # 6.53×10^6
      type = 'l', lwd=2,  xlab = 'Time (hours)',    ylab = 'Hb Adducts (pmol/g globin)', 
      main = 'AA Hemoglobin Adducts',    ylim = c(0, 150)) # Adjusted ylim to typical range (0-150)
 # Add reference points (ensure these values are also in pmol/g globin)
 points(c(24, 120), c(51, 110), col="blue", cex = 1.5, pch = 17) ; grid()
 
-plot(out[,'time'], cumsum( out[,'m_AA_Hb'] * conv_factor_AA ),type = 'l',xlab = '', ylab = 'hemoglobin adducts', 
+plot(out[,'time'],
+     cumsum( out[,'m_AA_Hb'] * conv_factor_AA ),
+     type = 'l',xlab = '', ylab = 'hemoglobin adducts', 
      ylim = c(0, 5*max(out[,'m_AA_Hb']) )* 6.53 * 10^6 ); grid()
 points(  c(24, 120), c( 51, 110 )  , col="blue",cex = 1.5, pch = 17)
 
@@ -400,4 +400,38 @@ points(  c(24, 120), c( 51, 110 )  , col="blue",cex = 1.5, pch = 17)
 
 
 
+
+
+
+
+
+
+
+
+cat('Press ENTER to plot more:............'); plot(out)
+
+
+yobs_urine <- data.frame(
+  time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
+  AAMA = c(0.0/1000000, 32.8/1000000, 69.5/1000000, 42.8/1000000, 45.2/1000000, 24.5/1000000, 15/1000000, 7/1000000)*234.28, #https://pubchem.ncbi.nlm.nih.gov/compound/N-Acetyl-S-_2-carbamoylethyl_-L-cysteine
+  GAMA = c(0.0, 2.15*1e-6, 3.66*1e-6, 4.38*1e-6, 6.57*1e-6, 5.26*1e-6, 3.50*1e-6, 3.0*1e-6)*250.27
+)
+
+
+# plot for AAMA in urinary
+par(mfrow=c(3,2),mar=c(2,4,.5,.5))
+plot(out[,'time'], out[,'m_AAMA']   ,type = 'l',xlab = 'time', ylab = 'aama', ylim = c(0,.02) )
+points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4) ; grid()
+time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
+tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.08), xlab = 'time' ); grid()
+points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
+
+# plot for GAMA 
+plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
+points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
+time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
+tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
+points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
