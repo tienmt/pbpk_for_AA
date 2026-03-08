@@ -132,21 +132,24 @@ kpbpl2 = kpbpl1/reactratio  #!protein binding in plasma
 
 # 1. Total Globin Calculation (Standard Reference Man)
 # Hb concentration ~150 mg/mL (or g/L). Blood Volume ~5 L.
-Total_Globin_mg <- 150 * 5000 # = 750,000 mg
+#Total_Globin_mg <- 150 * 5000 # = 750,000 mg
 
 # 2. Formation Constants (L/h)
 # Literature k_val = 7500 fmol / (mg_globin * mM_AA * h)
 # Conversion logic: K (L/h) = k_val * Total_Globin * 1e-12
-K_FORM_AA_VAL <- 7500 * Total_Globin_mg * 1e-12  # Result: ~0.0056 L/h
+#K_FORM_AA_VAL <- 7500 * Total_Globin_mg * 1e-12  # Result: ~0.0056 L/h
+K_FORM_AA_VAL =  7500  # !fmol AA-val/mg globin per mM AA-hr
 
 # Literature k_val_GA = 34000 fmol / (mg_globin * mM_GA * h)
-K_FORM_GA_VAL <- 34000 * Total_Globin_mg * 1e-12 # Result: ~0.0255 L/h
+#K_FORM_GA_VAL <- 34000 * Total_Globin_mg * 1e-12 # Result: ~0.0255 L/h
+K_FORM_GA_VAL <- 34000 # fmol GA-val/mg globin per mM GA-hr
 
 # 3. Removal Constants (1/h)
 # Adducts are removed with RBC turnover (Lifespan ~120 days)
 # Should match KPTRB (Protein turnover in RBC)
-K_REM_AA_VAL <- KPTRB # 0.00035
-K_REM_GA_VAL <- KPTRB # 0.00035
+#K_REM_AA_VAL <- KPTRB # 0.00035
+K_REM_AA_VAL <- 0.00231 #AA-val adducts from RBC per hr
+K_REM_GA_VAL <- 0.00231 #AA-val adducts from RBC per hr
 
 
 
@@ -176,8 +179,8 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, 
           a_pb_GA_T = 0,
           a_pb_GA_B = 0,
-          m_AA_Hb = 0.0,   # <-- AA-hemoglobin adduct
-          m_GA_Hb = 0.0    # <-- GA-hemoglobin adduct
+          m_AA_Hb = 0.0,   # <-- AA-hemoglobin adduct (fmol adducts per mg globin)
+          m_GA_Hb = 0.0    # <-- GA-hemoglobin adduct (fmol adducts per mg globin)
 )
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # PBPK model for Acrylamide (AA) with GA and mass-balance diagnostics
@@ -225,9 +228,9 @@ PBPKmodelAA <- function(t, state, parameter) {
     
     # !terminal valine hemoglobin adducts
     
-    # we define m_AA_Hb in unit as "fenta gram" adducts per mg globin
-    dm_AA_Hb <- K_FORM_AA_VAL * c_AA_VB - K_REM_AA_VAL * m_AA_Hb
-    # "fenta gram" adducts per mg globin
+    # we define m_AA_Hb in unit as "fmol adducts per mg globin"
+    dm_AA_Hb <- K_FORM_AA_VAL * (c_AA_VB / MW_aa) - K_REM_AA_VAL * m_AA_Hb
+    
     
     
     
@@ -384,7 +387,7 @@ conv_factor_GA <- 1e9 / (MW_ga * Total_Globin_g)
 par(mfrow=c(1,2),mar=c(2,4,1,1))
 # plot for hemoglobin adducts AA 
 plot(out[,'time'], 
-     out[,'m_AA_Hb'] * conv_factor_AA ,  # 6.53×10^6
+     out[,'m_AA_Hb'], # * conv_factor_AA ,  # 6.53×10^6
      type = 'l', lwd=2,  xlab = 'Time (hours)',    ylab = 'Hb Adducts (pmol/g globin)', 
      main = 'AA Hemoglobin Adducts',    ylim = c(0, 150)) # Adjusted ylim to typical range (0-150)
 # Add reference points (ensure these values are also in pmol/g globin)
