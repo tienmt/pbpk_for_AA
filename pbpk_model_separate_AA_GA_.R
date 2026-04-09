@@ -1,5 +1,4 @@
-library(deSolve)
-library(minpack.lm)
+library(deSolve) ; library(minpack.lm)
 graphics.off()
 
 # body weight in kg
@@ -142,7 +141,6 @@ K_FORM_GA_VAL <- 34000 # fmol GA-val/mg globin per mM GA-hr
 # 3. Removal Constants (1/h)
 # Adducts are removed with RBC turnover (Lifespan ~120 days)
 # Should match KPTRB (Protein turnover in RBC)
-#K_REM_AA_VAL <- KPTRB # 0.00035
 K_REM_AA_VAL <- 0.000231 #AA-val adducts from RBC per hr
 K_REM_GA_VAL <- 0.00231 #AA-val adducts from RBC per hr
 
@@ -164,17 +162,16 @@ params <- unlist(c(data.frame(pAA_TB, pAA_LiB, pAA_KiB,
 yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,      
           m_AA_VB = 0.0, m_GA_VB = 0.0,
           m_AA_mix = 0.0,   # AA amount in mixed venous delay compartment (mg)
+          m_GA_mix = 0.0,   # GA amount in mixed venous delay compartment (mg)
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
           m_AA_Li = 0.0, m_AAMA = 0.0, 
           m_GA_Li = 0.0, a_pb_GA_Li = 0.0,
           m_GAMA  = 0.0,       
           m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
-          m_AA_T = 0.0, m_GA_T = 0.0,
-          m_GAOH = 0.0, 
+          m_AA_T = 0.0, m_GA_T = 0.0,     m_GAOH = 0.0, 
           a_pb_AA_Ki = 0,  a_pb_AA_Li = 0,
           a_pb_GA_Ki = 0, a_pb_AA_T = 0, 
           a_pb_GA_T = 0,
-          a_pb_GA_B = 0,
           m_AA_Hb = 0.0,   # <-- AA-hemoglobin adduct (fmol adducts per mg globin)
           m_GA_Hb = 0.0    # <-- GA-hemoglobin adduct (fmol adducts per mg globin)
 )
@@ -198,7 +195,6 @@ PBPKmodelAA <- function(t, state, parameter) {
     # units checked -> mg/h
     dm_AA_dose <- - k_AAuptake * m_AA_dose
     
-    # Blood
     # units checked -> mg/h
     # Arterial blood
     dm_AA_AB <- Q_C * (c_AA_VB - c_AA_AB) - k_onAA_B * c_AA_AB * V_AB
@@ -251,17 +247,24 @@ PBPKmodelAA <- function(t, state, parameter) {
     c_GA_T  <- m_GA_T  / V_T
     c_GA_Li <- m_GA_Li / V_Li
     c_GA_Ki <- m_GA_Ki / V_Ki
+    c_GA_mix <- m_GA_mix / V_mix   # mixed compartment
+    
     
     # Blood
     dm_GA_AB <- Q_C * (c_GA_VB - c_GA_AB) - k_onGA_B * m_GA_AB
-    dm_GA_VB <- Q_T * (c_GA_T / pGA_TB) + Q_Li * (c_GA_Li / pGA_LiB) + Q_Ki * (c_GA_Ki / pGA_KiB) -
-      Q_C * c_GA_VB - k_onGA_B * m_GA_VB
     
-    # overall turnover / bound pool in blood (diagnostic of binding turnover)
-    da_pb_GA_B <- k_onGA_B * c_GA_AB - a_pb_GA_B * KPTRB + Q_C * (c_GA_VB - c_GA_AB)
+    # Mixed venous delay compartment: receives tissue outflows
+    dm_GA_mix <- Q_T  * (c_GA_T  / pGA_TB) +
+      Q_Li * (c_GA_Li / pGA_LiB) +
+      Q_Ki * (c_GA_Ki / pGA_KiB) -
+      Q_C  * c_GA_mix
+    
+    # Venous blood: receives flow from mixed compartment
+    dm_GA_VB <- Q_C * (c_GA_mix - c_GA_VB) - k_onGA_B * c_GA_VB * V_VB
     
     # hemoglobin
-    dm_GA_Hb <- K_FORM_GA_VAL * c_GA_VB - K_REM_GA_VAL * m_GA_Hb
+    dm_GA_Hb <- K_FORM_GA_VAL * ( c_GA_VB / MW_ga ) - K_REM_GA_VAL * m_GA_Hb
+    
     
     
     # Kidney
@@ -323,7 +326,7 @@ PBPKmodelAA <- function(t, state, parameter) {
     derivs <- c(
       dm_AA_AB,    dm_GA_AB,   
       dm_AA_VB,    dm_GA_VB,
-      dm_AA_mix,
+      dm_AA_mix,         dm_GA_mix,
       dm_AA_Ki,    dm_GA_Ki,   dm_AA_dose,
       dm_AA_Li,    dm_AAMA,
       dm_GA_Li,    da_pb_GA_Li, dm_GAMA,
@@ -332,14 +335,12 @@ PBPKmodelAA <- function(t, state, parameter) {
       da_pb_AA_Ki, da_pb_AA_Li,
       da_pb_GA_Ki, da_pb_AA_T, 
       da_pb_GA_T,
-      da_pb_GA_B,
       dm_AA_Hb ,   # <-- AA-hemoglobin adduct
       dm_GA_Hb     # <-- GA-hemoglobin adduct
     )
     
     # Named diagnostics returned as additional items (deSolve will include them in output)
-    return(list(
-      derivs,
+    return(list(    derivs,
       total_AA_mass = total_AA_mass,
       total_GA_mass = total_GA_mass,
       combined_total_mass = total_AA_mass + total_GA_mass,
@@ -366,7 +367,7 @@ diet <- data.frame(var = "m_AA_dose", method = "add",   #  24* c(0:(n_days/2))
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
 
 
-par(mfrow=c(1,1),mar=c(2,4,1,1))
+par(mfrow=c(1,2),mar=c(2,4,1,1))
 # plot for hemoglobin adducts AA 
 plot(out[,'time'], 
      out[,'m_AA_Hb'], # * conv_factor_AA ,  # 6.53×10^6
@@ -375,9 +376,11 @@ plot(out[,'time'],
 # Add reference points (ensure these values are also in pmol/g globin)
 points(c(24, 120), c(51, 110), col="blue", cex = 1.5, pch = 17) ; grid()
 
-
-
-
+plot(out[,'time'],  out[,'m_GA_Hb'], # * conv_factor_AA ,  # 6.53×10^6
+     type = 'l', lwd=2,  xlab = 'Time (hours)',    ylab = 'Hb Adducts (pmol/g globin)', 
+     main = 'GA Hemoglobin Adducts',    ylim = c(0, 250)) # Adjusted ylim to typical range (0-150)
+# Add reference points (ensure these values are also in pmol/g globin)
+points(c(24, 120), c(51, 100), col="blue", cex = 1.5, pch = 17) ; grid()
 
 
 
