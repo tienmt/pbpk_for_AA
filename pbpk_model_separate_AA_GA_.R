@@ -28,7 +28,7 @@ Q_C = QCC*BW^0.75
 #FQ_P = 2.5/100 Trine: We don't have a lung compartment in this model
 FQ_Li = 0.255
 FQ_Ki = 0.19 #total - there is also an aterial flow rate 
-FQ_T = 1 -( FQ_Li + FQ_Ki) # +FQ_P) Trine: We don't have a lung compartment in this model
+FQ_T = 1 - ( FQ_Li + FQ_Ki) # +FQ_P) Trine: We don't have a lung compartment in this model
 Q_Li <- Q_C*FQ_Li
 Q_Ki <- Q_C*FQ_Ki
 Q_T <- Q_C*FQ_T
@@ -105,28 +105,15 @@ KMGG <- 0.1 * MW_GSH # In Sweeney: KMGG = 0.1 mM # .1/MW_GSH        # !KM with r
 KMG2 = 100  #!Km with respect to GA for GSH conjugation mM. Trine: This should be mg. Delete the term MW_aa
 # The same comment as for KMG1
 
-# from the code, not from paper
-KPT_Li = 0.015    # !'protein turnover rate in liver'# this is confimred in the exp. values of Sweeney
-KPT_Ki = 0.013    # !'protein turnover rate in kidney'# 1/h this is 0.012 in Sweeney, I guess its not much of difference
-#KPTR   = 1        # !'protein turnover rate in rpt'# this is 0.012 in Li et.al
-KPTS   = 0.0039   # !'protein turnover rate in spt'# and this they have it 0.0051 Sweeney and Li 0.0012 refering to Sweeney
-KPTRB  = 0.00035  # (correct by Maria)    # !'protein turnover rate in rbc'# how did we get that?
-KPTPL  = 0.012    # !'protein turnover rate in plasma'# Sweeney has 0.012 for this value
-
-kpb_Li = 0.1    #!protein binding in liver
-reactratio = 2.0  #!reactivity ratio with protein, AA/GA
-kpb_Li_2 = kpb_Li/reactratio    #!protein binding in liver
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # CORRECTED HB ADDUCT PARAMETERS
 # 2 Formation Constants (L/h)
 K_FORM_AA_VAL =  6400  # !fmol AA-val/mg globin per mM AA-hr
-
 K_FORM_GA_VAL <- 59000 # fmol GA-val/mg globin per mM GA-hr
 
 # 3. Removal Constants (1/h)
 # Adducts are removed with RBC turnover (Lifespan ~120 days)
-# Should match KPTRB (Protein turnover in RBC)
 K_REM_AA_VAL <- 0.00035 #AA-val adducts from RBC per hr
 K_REM_GA_VAL <- 0.00035 #AA-val adducts from RBC per hr
 
@@ -148,7 +135,7 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
           m_GA_mix = 0.0,   # GA amount in mixed venous delay compartment (mg)
           m_AA_Ki = 0.0, m_GA_Ki = 0.0, m_AA_dose = 0 ,
           m_AA_Li = 0.0, m_AAMA = 0.0, 
-          m_GA_Li = 0.0, a_pb_GA_Li = 0.0,
+          m_GA_Li = 0.0, 
           m_GAMA  = 0.0,       
           m_GSH_Li = k_0_GSH * V_Li * MW_GSH, 
           m_AA_T = 0.0, m_GA_T = 0.0,     m_GAOH = 0.0, 
@@ -160,6 +147,10 @@ yini <- c(m_AA_AB = 0.0, m_GA_AB = 0.0,
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 PBPKmodelAA <- function(t, state, parameter) {
   with(as.list(c(t, state, parameter)), {
+    Q_C  <- QCC * BW^0.75
+    Q_Li <- Q_C * FQ_Li
+    Q_Ki <- Q_C * FQ_Ki
+    Q_T  <- Q_C * (1 - FQ_Li - FQ_Ki) # always sums to Q_C
     
     #----#---#  Model for AA  #---#---#
     # concentrations blood in the organs in mg/L
@@ -253,8 +244,6 @@ PBPKmodelAA <- function(t, state, parameter) {
     metAA_P450_GA <- metAA_P450 * (MW_ga / MW_aa)
     dm_GA_Li <- Q_Li * (c_GA_AB - c_GA_Li / pGA_LiB) - k_onGA_Li * m_GA_Li +
       metAA_P450_GA - metGA_GSH - metGA_EH
-    # protein turnover GA in Liver
-    da_pb_GA_Li <- kpb_Li_2 * m_GA_Li - a_pb_GA_Li * KPT_Li
     
     # GA metabolites (excretable)
     dm_GAMA  <- metGA_GSH - m_GAMA * k_exc_GAMA
@@ -304,7 +293,7 @@ PBPKmodelAA <- function(t, state, parameter) {
       dm_AA_mix,         dm_GA_mix,
       dm_AA_Ki,    dm_GA_Ki,   dm_AA_dose,
       dm_AA_Li,    dm_AAMA,
-      dm_GA_Li,    da_pb_GA_Li, dm_GAMA,
+      dm_GA_Li,    dm_GAMA,
       dm_GSH_Li,   dm_AA_T,     dm_GA_T,
       dm_GAOH,
       dm_AA_Hb ,   # <-- AA-hemoglobin adduct
@@ -332,14 +321,18 @@ PBPKmodelAA <- compiler::cmpfun(PBPKmodelAA)
 # manual readout from Vikstrom 2011 InVitroAcrylamide
 # ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-n_days = 1 # simulate for 5 days
+n_days = 5 # simulate for 5 days
 times <- seq(from = 0, to = n_days * 24   , by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",   #  24* c(0:(n_days/2))
                    time = c(0 ),  value = 1000 *BW /1000 ) #  0.5 *BW /1000   # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
+yobs_urine <- data.frame(
+  time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
+  AAMA = c(0, 32.8*1e-6, 69.5*1e-6, 42.8*1e-6, 45.2*1e-6, 24.5*1e-6, 15*1e-6, 7*1e-6)*234.28, #https://pubchem.ncbi.nlm.nih.gov/compound/N-Acetyl-S-_2-carbamoylethyl_-L-cysteine
+  GAMA = c(0, 2.15*1e-6, 3.66*1e-6, 4.38*1e-6, 6.57*1e-6, 5.26*1e-6, 3.5*1e-6, 3*1e-6)*250.27
+)
 
-
-par( mfrow = c(1,2) , mar = c(4,4,1,1) )
+par(mfrow=c(3,2),mar=c(2,4,.5,.5))
 # plot for hemoglobin adducts AA 
 plot(out[,'time'], 
      out[,'m_AA_Hb'],
@@ -357,6 +350,21 @@ plot(out[,'time'],  out[,'m_GA_Hb'],
 #points(c(24, 120), c(51, 100), col="blue", cex = 1.5, pch = 17) ; grid()
 
 
+# plot for AAMA in urinary
+plot(out[,'time'], out[,'m_AAMA']   ,type = 'l',xlab = 'time', ylab = 'aama', ylim = c(0,.02) )
+points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4) ; grid()
+time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
+tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylab = 'aama', ylim = c(0,.08), xlab = 'time' ); grid()
+points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
+
+# plot for GAMA 
+plot(out[,'time'], out[,'m_GAMA']  ,type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.002) )
+points(yobs_urine$time, yobs_urine$GAMA , col="blue", cex = 1.5, pch = 17); grid()
+time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
+tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l',xlab = '', ylab = 'GAMA', ylim = c(0,.01) ); grid()
+points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue",cex = 1.5, pch = 17)
 
 
 
@@ -368,44 +376,53 @@ plot(out[,'time'],  out[,'m_GA_Hb'],
 # Let's rebuild the numeric params vector to include Q_C and k_exc_GAOH
 params <- unlist(c(data.frame(Q_C, pAA_TB, pAA_LiB, pAA_KiB,
                               pGA_TB, pGA_LiB, pGA_KiB,
-                              k_onAA_T, k_onAA_B, k_onAA_Li,  k_onAA_Ki,
-                              k_onGA_T, k_onGA_B, k_onGA_Li, k_onGA_Ki, 
+                              k_onAA_T, k_onAA_B, k_onAA_Li, 
+                              k_onAA_Ki,
+                              k_onGA_T, k_onGA_B, k_onGA_Li, 
+                              k_onGA_Ki, 
                               k_exc_AAMA, k_exc_GAMA, k_exc_GAOH,
-                              k_cl_GSH, V_max_p450, KM_p450, V_max_EH, KM_EH,
-                              k_AAuptake)))
+                              k_cl_GSH, V_max_p450, KM_p450, 
+                              V_max_EH, KM_EH,
+                              K_FORM_AA_VAL, K_FORM_GA_VAL,
+                              K_REM_AA_VAL, K_REM_GA_VAL ) ) )
 
 ## Define the distribution of the parameters that you will analyse in the sensitivity test 
 LL <- 0.9 # 10% lower limit
 UL <- 1.1 # 10% upper limit
 
 # 2. Define a character vector of ONLY the parameters that actually exist in the model
-sens_params <- c('BW' ,'Q_C', 'pAA_TB', 'pAA_LiB',  'pAA_KiB'
-                 # ,
-                 # 'pGA_TB', 'pGA_LiB',  'pGA_KiB',
-                 # 'k_onAA_T', 'k_onAA_B', 'k_onAA_Li', 'k_onAA_Ki',
-                 # 'k_onGA_T', 'k_onGA_B', 'k_onGA_Li', 'k_onGA_Ki', 
-                 # 'k_exc_AAMA', 'k_exc_GAMA', 'k_exc_GAOH',
-                 # 'k_cl_GSH', 'V_max_p450', 'KM_p450', 'V_max_EH'
+sens_params <- c('BW' 
+                ,
+                'k_cl_GSH', 'V_max_p450', 'KM_p450'
+                ,
+                'V_max_EH' 
+                ,
+                 'pGA_TB', 'pGA_LiB'
+                ,
+                'pGA_KiB'  
+                ,
+                'k_onGA_T', 'k_onGA_B' , 'k_onGA_Li', 'k_onGA_Ki' 
                  )
+
 
 # 3. Dynamically build the q.arg list so you don't have to type them all out manually
 q.arg <- lapply(sens_params, function(p) {
-  list(min = params[p] * LL, max = params[p] * UL)
+  list(min = params[p] * LL,
+       max = params[p] * UL )
 })
 
 q <- rep("qunif", length(sens_params))
 
 ## Create parameter matrix ##  
 set.seed(124)
-
+library(pksensi)
 # Use the sens_params character vector here
 x <- rfast99(params = sens_params, n = 200, q = q, q.arg = q.arg, rep = 1)
 
-library(pksensi)
-
+par( mfrow = c(1,1) , mar = c(4,4,1,1) )
 ## Conduct simulation pksensi ##
 # 4. The output must perfectly match a state variable name (m_GAMA, not m_GAMA_urinary)
-outputs <- c("m_AA_Hb")
+outputs <- c('m_GAMA') # m_AA_Hb ; m_AAMA
 
 out_sensitivity <- solve_fun(x, time = times, func = PBPKmodelAA, 
                              events = list(data = diet), initState = yini, outnames = outputs)
@@ -414,6 +431,28 @@ pksim(out_sensitivity)
 
 ## Output from the sensitivity analysis ##
 plot(out_sensitivity)
+
+heat_check(out_sensitivity, index = "CI") 
+
+library(dplyr); library(tidyr) ; library(ggplot2)
+tSI <- out_sensitivity$tSI[,,1]    # Extract total sensitivity indices
+tSI_df <- as.data.frame(tSI)       # Convert to data frame
+# Add time
+tSI_df$time <- as.numeric(rownames(tSI_df))
+tSI_long <- tSI_df %>%             # Convert to long format
+            pivot_longer( cols = -time,
+                     names_to = "Parameter",
+                     values_to = "Sensitivity"  )
+ggplot(tSI_long,
+       aes(x = time,  y = Parameter,
+           fill = Sensitivity)) +
+  geom_tile() +  scale_fill_gradient2(
+    low = "blue",  mid = "white",  high = "black",
+    midpoint = median(tSI_long$Sensitivity, na.rm = TRUE)
+  ) +  theme_bw(base_size = 14) +
+  labs(
+    title = "Total Sensitivity: m_GAMA",
+    x = "Time",   y = "Parameter"  )
 
 
 
