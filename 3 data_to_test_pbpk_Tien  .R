@@ -5,7 +5,7 @@
 ################################################################
 times <- seq(from = 0, to = 60, by = 0.1)
 diet <- data.frame(var = "m_AA_dose", method = "add",
-                   time = c(0.0),  value = 0.05 *BW )  # dose of 0.05 microg/kg bw
+                   time = c(0.0),  value = 0.5 *BW /1000 )  # dose of 0.05 microg/kg bw
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet))
 yobs_urine <- data.frame(
   time = c(0.0, 3.9, 8.3, 14, 19.5, 28, 37, 45.9),
@@ -14,19 +14,19 @@ yobs_urine <- data.frame(
 )
 # plot for AAMA in urinary
 par(mfrow=c(2,2))
-plot(out[,'time'], out[,'m_AAMA_urinary'],type = 'l', ylim = c(0,.03) )
+plot(out[,'time'], out[,'m_AAMA'],type = 'l', ylim = c(0,.03) ,xlab = 'time (h)', ylab = 'AAMA')
 points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4)
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_AAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.1) ); grid()
+tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.1),xlab = 'time (h)', ylab = 'AAMA' ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA_urinary'],type = 'l', ylim = c(0,.002) )
+plot(out[,'time'], out[,'m_GAMA'],type = 'l', ylim = c(0,.002),xlab = 'time (h)', ylab = 'GAMA' )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", lwd = 4); 
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371, 460)
-tamtam = out[,'m_GAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.01) ); grid()
+tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.01),xlab = 'time (h)', ylab = 'GAMA' ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue", lwd = 4)
 
 
@@ -44,23 +44,23 @@ yobs_urine <- data.frame(
   GAMA = c( 29 , 33.3, 50.3, 79.2, 105.1, 118.5, 119.2, 70.3, 66.6)*250.27/1e6
 ) 
 diet <- data.frame(var = "m_AA_dose",
-                   time = c(1),  value = 12.6 *BW , method = "add")# dose of 12.6 microg/kg bw
+                   time = c(1),  value = 12.6 *BW / 1000 , method = "add")# dose of 12.6 microg/kg bw
 times <- seq(from = 0, to = 50, by = 0.1)
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet), atol = 1e-6, rtol= 1e-8)
 # plot for AAMA in urinary
 par(mfrow=c(2,2))
-plot(out[,'time'], out[,'m_AAMA_urinary'],type = 'l', ylim = c(0, 1 ) )
+plot(out[,'time'], out[,'m_AAMA'],type = 'l', ylim = c(0, 1 ),xlab = 'time (h)', ylab = 'AAMA' )
 points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4)
 time_points_measure_unrine = c(2, 3.5, 5.6, 7.9, 9.7, 14, 24.1, 36, 48.2)*10
-tamtam = out[,'m_AAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ) , type = 'l', ylim = c(0, 4) ); grid()
+tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ) , type = 'l', ylim = c(0, 4),xlab = 'time (h)', ylab = 'AAMA'  ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA_urinary'],type = 'l', ylim = c(0,.05) )
+plot(out[,'time'], out[,'m_GAMA'],type = 'l', ylim = c(0,.05),xlab = 'time (h)', ylab = 'GAMA')
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", lwd = 4)
-tamtam = out[,'m_GAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.3) ); grid()
+tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.3),xlab = 'time (h)', ylab = 'GAMA' ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue", lwd = 4)
 
 
@@ -77,24 +77,24 @@ yobs_urine <- data.frame(
   GAMA = c(0.0/1e6, 38.1/1e6, 129.7/1e6, 190.8/1e6, 297.7/1e6, 175.5/1e6, 129.7/1e6)*250.27
 )
 diet <- data.frame(var = "m_AA_dose", method = "add",
-                   time = c(0),  value = 20 *BW )# dose of 20 microg/kg bw
+                   time = c(0),  value = 20 *BW /1000 )# dose of 20 microg/kg bw
 times <- seq(from = 0, to = 50, by = 0.1)
 out <- ode(y = yini, times = times, func = PBPKmodelAA, parms = params, events = list(data = diet), atol = 1e-6, rtol= 1e-8)
 # plot for AAMA in urinary
 par(mfrow=c(2,2))
-plot(out[,'time'], out[,'m_AAMA_urinary'],type = 'l', ylim = c(0, 2 ) )
+plot(out[,'time'], out[,'m_AAMA'],type = 'l', ylim = c(0, 2 ),xlab = 'time (h)', ylab = 'AAMA' )
 points(yobs_urine$time, yobs_urine$AAMA , col="blue", lwd = 4)
 time_points_measure_unrine = c(1, 42, 84, 141, 196, 280 , 371)
-tamtam = out[,'m_AAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ) , type = 'l', ylim = c(0, 3) ); grid()
+tamtam = out[,'m_AAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ) , type = 'l', ylim = c(0, 3),xlab = 'time (h)', ylab = 'AAMA' ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$AAMA) , col="blue", lwd = 4)
 
 # plot for GAMA 
-plot(out[,'time'], out[,'m_GAMA_urinary'],type = 'l', ylim = c(0,.1) )
+plot(out[,'time'], out[,'m_GAMA'],type = 'l', ylim = c(0,.1),xlab = 'time (h)', ylab = 'GAMA' )
 points(yobs_urine$time, yobs_urine$GAMA , col="blue", lwd = 4)
 time_points_measure_unrine = c(1, 40, 84, 141, 196, 280 , 371 )
-tamtam = out[,'m_GAMA_urinary'][time_points_measure_unrine ]
-plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.3) ); grid()
+tamtam = out[,'m_GAMA'][time_points_measure_unrine ]
+plot(yobs_urine$time, cumsum( tamtam ),type = 'l', ylim = c(0,.3),xlab = 'time (h)', ylab = 'GAMA' ); grid()
 points(yobs_urine$time, cumsum(yobs_urine$GAMA) , col="blue", lwd = 4)
 
 
