@@ -8,13 +8,7 @@
 # Activate packages
 # =============================================================================
 
-library(ggplot2)
-library(ggpubr)
-library(writexl)
-#library(MASS)
-#library(survival)
 library(fitdistrplus)
-#library(Rcpp)
 library(openxlsx)
 library(tidyverse)
 library(kableExtra)
@@ -317,173 +311,64 @@ write.xlsx(SumAcrylamideDay1,
 
 
 # =============================================================================
-# COMMENTED OUT SECTIONS (not used in current analysis)
+# Figures
 # =============================================================================
 
-# --- Calculate the contribution from the different food groups from the diaries ---
+# --- Box-plot of all IDs per food category -----------------------------------
 
-# Take the average over all MC for each food category for each individual.
+# Mean over the MC iterations for each person and food category (ug/day)
+Acrylamide_Day1_FoodCat <- as_tibble(apply(Acrylamide_Day1, c(1, 2), mean), .name_repair = "minimal") %>%
+  mutate(IDkode = SumFoodIntakeDay1$IDkode) %>%
+  pivot_longer(cols = -IDkode, names_to = "FoodCat", values_to = "Conc") %>%
+  filter(Conc > 0) # persons who did not eat the food category (cannot be shown on a log scale)
 
-# Acrylamide_Diary_FoodCat <- as_tibble(matrix(NA, nrow = nrow(Acrylamide_Diary), ncol = 9)) #ev: mine does not have 124 rows
-# for (i in 1:9){
-#   Acrylamide_Diary_FoodCat[,i] <- rowSums(Acrylamide_Diary[,i,], na.rm = TRUE)/1000
-# }
-#
-# ColName_FoodCat <- names(SumFoodIntakeFFQ[,3:11])  # The columns named with food categories
-# ColName_FoodCat
-# colnames(Acrylamide_Diary_FoodCat) <- ColName_FoodCat
-#
-# Acrylamide_Diary_FoodCat$IDkode <- SumFoodIntakeBothDays[,1]
-#
-# Acrylamide_Diary_FoodCat <- gather(Acrylamide_Diary_FoodCat, FoodCat, Conc, Biscuits:PotatoTortilla, factor_key = TRUE)
+Plot_acrylamide_Day1_FoodCat <- ggplot(Acrylamide_Day1_FoodCat, aes(x = FoodCat, y = Conc, fill = FoodCat)) +
+  geom_boxplot() +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  # fixed y-axis range with room above the highest box for the label
+  scale_y_log10(limits = c(0.05, 500), breaks = c(0.1, 1, 10, 100), labels = scales::comma) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 20),
+        axis.title = element_text(size = 24),
+        axis.text.y = element_text(size = 20),
+        legend.position = "none") +
+  xlab("Food category") +
+  ylab("Acrylamide exposure (ug/day)") +
+  annotate("text", x = -Inf, y = Inf, label = "Diary, day 1", hjust = -0.1, vjust = 1.5, size = 9)
 
+Plot_acrylamide_Day1_FoodCat
 
-# --- Make summary data for each food category ---
-
-# SumAcrylamide_Diary_FoodCat <- Sum(Acrylamide_Diary_FoodCat)
-
-
-# Save the file
-# write.xlsx(SumAcrylamide_Diary_FoodCat,
-#            file = file.path(newday,"SumAcrylamide_Diary_FoodCat.xlsx"),
-#            colNames = TRUE, borders = "rows"
-# )
+ggsave(filename = file.path(newday, "Plot_acrylamide_Day1_FoodCat.jpeg"),
+       plot = Plot_acrylamide_Day1_FoodCat, width = 250, height = 200, units = "mm")
 
 
-# --- Box-plot of all IDs per food category ---
+# --- Cumulative distribution of total exposure per kg body weight ------------
 
-# Plot_acrylamide_Diary_FoodCat <- ggplot(data = Acrylamide_Diary_FoodCat, aes(y=Conc, x=FoodCat)) +
-#   geom_boxplot(fill="grey")+
-#   theme_minimal()+
-#   scale_y_log10(limits=c(0.5,60), labels = scales::comma)+
-#   theme(axis.text.x = element_text(angle = 90, size = 20), axis.title = element_text(size = 24),
-#         axis.text.y = element_text(size = 20),legend.position= "none")+
-#   xlab("Food category")+
-#   ylab("Acrylamide exposure (ug/day)")+
-#   annotate("text", x=9, y=40, label="Diary", size=9)
-#
-# Plot_acrylamide_Diary_FoodCat
-#
-# ggsave(filename=file.path(newday, "Plot_acrylamide_Diary_FoodCat.jpeg"),
-#        device = NULL,
-#        width=NA,
-#        height=NA,
-#        units="mm")
+# Total exposure (ug/kg bw/day) for each person and MC iteration
+Acrylamide_Day1_total_bw <- sweep(as.matrix(Acrylamide_Day1_total[, as.character(1:1000)]),
+                                  1, SumFoodIntakeDay1$BW, "/")
 
+# Person-level P05, P50 and P95 over the MC iterations
+Acrylamide_Day1_bw <- tibble(
+  IDkode = SumFoodIntakeDay1$IDkode,
+  P05 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.05),
+  P50 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.50),
+  P95 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.95)
+) %>%
+  filter(P95 > 0) %>% # persons with no intake of any of the food categories on day 1
+  pivot_longer(cols = -IDkode, names_to = "Percentile", values_to = "Acrylamide")
 
-# --- Make cumulative density plots ---
+Plot_Acrylamide_Day1_ecdf <- ggplot(Acrylamide_Day1_bw, aes(Acrylamide, colour = Percentile)) +
+  geom_line(stat = "ecdf", linewidth = 1.2) +
+  scale_colour_brewer(palette = "Set1") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(size = 20), axis.title = element_text(size = 20),
+        axis.text.y = element_text(size = 20), legend.key.size = unit(1, "cm"),
+        legend.text = element_text(size = 20), legend.title = element_blank()) +
+  xlab("Acrylamide (ug/kg bw/day)") +
+  ylab("Cumulative probability")
 
-# Estimated exposure from adducts compared to the mean exposure from the diaries and FFQ
-# #ev: i do not have the same length for B, C & D as stated here (128) so i've changed it to count the length of the df
-#
-# A = c(Exposure_all$ADDUCT, Exposure_all$mean_diary, Exposure_all$mean_FFQ)
-# B = replicate(nrow(Exposure_all),"Adduct")
-# C = replicate(nrow(Exposure_all),"mean_diary")
-# D = replicate(nrow(Exposure_all),"mean_FFQ")
-# E = c(B,C,D)
-#
-# Acrylamide_mean <- as.data.frame(matrix(NA,nrow = nrow(Exposure_all)*3, ncol = 2))
-# Acrylamide_mean[1] <- A
-# Acrylamide_mean[2] <- E
-#
-# names(Acrylamide_mean)[1] <- "Acrylamide"
-# names(Acrylamide_mean)[2] <- "Exposure"
-#
-# Acrylamide_mean <- as.data.frame(Acrylamide_mean)
+Plot_Acrylamide_Day1_ecdf
 
-
-# Plot_Acrylamide_mean <- ggplot(data = Acrylamide_mean, aes(Acrylamide)) +
-#   geom_line(stat = "ecdf", size = 0.8, aes(linetype=Exposure))+
-#   theme_minimal()+
-#   scale_x_continuous(limits=c(0.001, 1.5))+
-#   theme(axis.text.x = element_text(angle = 90, size = 20), axis.title = element_text(size = 20),
-#         axis.text.y = element_text(size = 20), legend.key.size = unit(1, "cm"), legend.text = element_text(size =20), legend.title = element_blank())+
-#   xlab("Acrylamide (ug/kg bw/day)")+
-#   ylab("Cumulative probability")
-#
-# Plot_Acrylamide_mean
-#
-# ggsave(filename=file.path(newday,"Plot_Acrylamide_mean.jpeg"),
-#        device = NULL,
-#        width=NA,
-#        height=NA,
-#        units="mm")
-
-
-# Estimated exposure from adducts compared to the median (P50) exposure from the diaries and FFQ
-# #ev: again, i have different length...
-# G = c(Exposure_all$ADDUCT, Exposure_all$P50_diary, Exposure_all$P50_FFQ)
-# H = replicate(nrow(Exposure_all),"Adduct")
-# I = replicate(nrow(Exposure_all),"P50_diary")
-# J = replicate(nrow(Exposure_all),"P50_FFQ")
-# K = c(H,I,J)
-#
-# Acrylamide_P50 <- as.data.frame(matrix(NA,nrow = nrow(Exposure_all)*3, ncol = 2))
-# Acrylamide_P50[1] <- G
-# Acrylamide_P50[2] <- K
-#
-# names(Acrylamide_P50)[1] <- "Acrylamide"
-# names(Acrylamide_P50)[2] <- "Exposure"
-#
-# Acrylamide_P50 <- as.data.frame(Acrylamide_P50)
-
-
-# Plot_Acrylamide_P50 <- ggplot(data = Acrylamide_P50, aes(Acrylamide)) +
-#   geom_line(stat = "ecdf", size = 0.8, aes(linetype=Exposure))+
-#   theme_minimal()+
-#   scale_x_continuous(limits=c(0.001, 1.3))+
-#   theme(axis.text.x = element_text(angle = 90, size = 20), axis.title = element_text(size = 20),
-#         axis.text.y = element_text(size = 20), legend.key.size = unit(1, "cm"), legend.text = element_text(size =20), legend.title = element_blank())+
-#   xlab("Acrylamide (ug/kg bw/day)")+
-#   ylab("Cumulative probability")
-#
-# Plot_Acrylamide_P50
-#
-# ggsave(filename=file.path(newday,"Plot_Acrylamide_P50.jpeg"),
-#        device = NULL,
-#        width=NA,
-#        height=NA,
-#        units="mm")
-
-
-# --- Bland Altman Plots ---
-
-# Adducts versus P50 from the diaries
-# Exposure_all <- Exposure_all %>% mutate(avg_P50_diary = rowMeans(Exposure_all %>% dplyr::select("ADDUCT", "P50_diary"))) # calculate means of the two measurements for each ID
-# Exposure_all$diff_P50_diary <- Exposure_all$ADDUCT - Exposure_all$P50_diary # calculate difference in measurements for each ID
-#
-# Exposure_all <- merge(Exposure_all, SexWeight, by="IDkode", all=TRUE) %>%
-#   na.omit() %>%
-#   as_tibble()
-#
-# Exposure_all$smoking <- ifelse(Exposure_all$cat_Smoking==3, "Smoking", "Not smoking") # Make a variable gender to use in the Bland-Altman plot
-#
-# mean_diff_diary <- mean(Exposure_all$diff_P50_diary) # calculate average difference
-# mean_diff_diary
-# mean_sd_diary <- sd(Exposure_all$diff_P50_diary)
-# mean_sd_diary
-# lower_diff_diary <- mean_diff_diary - 1.96*sd(Exposure_all$diff_P50_diary) # calculate lower 95% conf int
-# lower_diff_diary
-# upper_diff_diary <- mean_diff_diary + 1.96*sd(Exposure_all$diff_P50_diary) # calculate upper 95% conf int
-# upper_diff_diary
-#
-# Plot_BA_adduct_DiaryP50 <- ggplot(Exposure_all, aes(x = avg_P50_diary, y = diff_P50_diary)) +
-#   geom_point(shape = 21, size=3, aes(fill = factor(smoking))) +
-#   scale_fill_grey(start = 0.5, end = .9)+
-#   annotate("rect", xmin = 0, xmax=0.75,  ymin = mean_diff_diary-mean_sd_diary, ymax = mean_diff_diary+mean_sd_diary, alpha = .1, fill = "grey" )+
-#   geom_hline(yintercept = mean_diff_diary) +
-#   geom_hline(yintercept = lower_diff_diary, color = "black", linetype="dashed") +
-#   geom_hline(yintercept = upper_diff_diary, color = "black", linetype="dashed") +
-#   ggtitle("Acrylamide adduct versus P50 from diary") +
-#   ylab("Difference Between Measurements") +
-#   xlab("Average Measurement")+
-#   theme( panel.background = element_rect(fill = 'white'), panel.grid.major = element_line(colour = "light grey", size = 0.2), plot.title = element_text(size = 22, face = "bold"), axis.text=element_text(size=22), axis.title=element_text(size=22),
-#         legend.title = element_blank())
-#
-# Plot_BA_adduct_DiaryP50
-#
-# ggsave(filename=file.path(newday, "Plot_BA_adduct_DiaryP50.jpeg"),
-#        device = NULL,
-#        width=NA,
-#        height=NA,
-#        units="mm")
+ggsave(filename = file.path(newday, "Plot_Acrylamide_Day1_ecdf.jpeg"),
+       plot = Plot_Acrylamide_Day1_ecdf, width = 250, height = 200, units = "mm")
