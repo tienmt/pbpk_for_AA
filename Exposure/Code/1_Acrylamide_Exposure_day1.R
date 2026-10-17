@@ -372,3 +372,34 @@ Plot_Acrylamide_Day1_ecdf
 
 ggsave(filename = file.path(newday, "Plot_Acrylamide_Day1_ecdf.jpeg"),
        plot = Plot_Acrylamide_Day1_ecdf, width = 250, height = 200, units = "mm")
+
+
+# =============================================================================
+# Persons with highest and lowest exposure
+# =============================================================================
+
+# Ranked by the mean over the MC iterations of total exposure (ug/kg bw/day).
+# The lowest are selected among persons with exposure > 0 (persons with no
+# intake of any of the food categories on day 1 have exposure = 0).
+Exposure_per_person <- tibble(
+  IDkode = SumFoodIntakeDay1$IDkode,
+  BW = SumFoodIntakeDay1$BW,
+  mean = rowMeans(Acrylamide_Day1_total_bw),
+  P05 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.05),
+  P50 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.50),
+  P95 = apply(Acrylamide_Day1_total_bw, 1, quantile, 0.95)
+)
+
+Exposure_extremes <- bind_rows(
+  Exposure_per_person %>% slice_max(mean, n = 3) %>% mutate(Group = "Highest"),
+  Exposure_per_person %>% filter(mean > 0) %>% slice_min(mean, n = 3) %>% mutate(Group = "Lowest")
+) %>%
+  relocate(Group)
+
+knitr::kable(Exposure_extremes, digits = 3) %>% kable_styling(font_size = 10, bootstrap_options = c("striped"))
+
+# Contains person-level data: saved in Results/ only (not tracked by git)
+write.xlsx(Exposure_extremes,
+           file = file.path(newday, "Exposure_extremes_ug_kg_bw.xlsx"),
+           colNames = TRUE, borders = "rows"
+)
