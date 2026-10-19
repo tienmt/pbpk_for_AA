@@ -15,6 +15,7 @@
 # Activate packages
 # =============================================================================
 
+library(ggrepel)
 library(openxlsx)
 library(tidyverse)
 
@@ -281,3 +282,141 @@ saveRDS(list(meals = Meals, exposure_ug = Exposure_meal),
 # The same for the meals merged within the time window
 saveRDS(list(meals = Meals_merged, window_min = Window_min, exposure_ug = Exposure_merged),
         file = file.path(newday, paste0("Acrylamide_Day2_merged_", Window_min, "min_MC.rds")))
+
+
+# =============================================================================
+# Figures
+# =============================================================================
+
+# The figures use the meals merged within the time window (the input to the
+# PBPK model). They show the dose per meal (ug), not the concentration in food.
+
+# --- Mean exposure over the day, all individuals together ---------------------
+
+# Dose per individual in each time interval (the meals are placed in the
+# interval of their dose time). Individuals without meals in an interval count
+# as zero, so the mean is over all individuals.
+Interval_h <- 1
+
+Dose_interval <- SumAcrylamideDay2_merged %>%
+  mutate(Interval = floor(Hours / Interval_h) * Interval_h) %>%
+  group_by(IDkode, Interval) %>%
+  summarise(Dose = sum(mean), .groups = "drop") %>%
+  complete(IDkode = Urine_IDs, Interval = seq(0, 24 - Interval_h, by = Interval_h),
+           fill = list(Dose = 0))
+
+Dose_interval_sum <- Dose_interval %>%
+  group_by(Interval) %>%
+  summarise(N = n(), mean = mean(Dose), P05 = quantile(Dose, 0.05),
+            P95 = quantile(Dose, 0.95), .groups = "drop") %>%
+  mutate(Mid = Interval + Interval_h / 2)
+
+Plot_Acrylamide_Day2_meals <- ggplot(Dose_interval_sum, aes(x = Mid)) +
+  geom_col(aes(y = mean), width = Interval_h * 0.9, fill = "#D55E00") +
+  geom_linerange(aes(ymin = P05, ymax = P95), colour = "grey40", linewidth = 0.6) +
+  scale_x_continuous(breaks = seq(0, 24, by = 3), limits = c(0, 24),
+                     labels = function(x) sprintf("%02d:00", as.integer(x) %% 24)) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16)) +
+  xlab("Time of day") +
+  ylab("Acrylamide exposure per interval (ug)\nmean of all individuals, bars: P05-P95 between individuals")
+
+Plot_Acrylamide_Day2_meals
+
+ggsave(filename = file.path(newday, "Plot_Acrylamide_Day2_meals.jpeg"),
+       plot = Plot_Acrylamide_Day2_meals, width = 250, height = 200, units = "mm")
+
+
+# --- Continuous curve of the mean exposure over the day ----------------------
+
+# Each dose (merged meal) is smoothed over time with a normal kernel with
+# standard deviation Bandwidth_h (hours), giving an exposure rate (ug/h). The
+# curve is the mean over all individuals. The dark band is the uncertainty of
+# the mean curve from the Monte Carlo iterations (P05-P95 over the iterations);
+# the light band is the spread between individuals (P05-P95 of the individual
+# curves, based on the mean dose per meal). The smoothing is not wrapped around
+# midnight, so the curve is slightly underestimated just before 24:00.
+Bandwidth_h <- 0.5
+Grid <- seq(0, 24, by = 0.05)
+
+Kernel <- dnorm(outer(Grid, SumAcrylamideDay2_merged$Hours, "-"), sd = Bandwidth_h) # grid x meals
+
+# Mean over individuals for each Monte Carlo iteration (grid x MC)
+Curve_MC <- (Kernel %*% Exposure_merged) / length(Urine_IDs)
+
+# Curve for each individual (grid x individuals), based on the mean dose per meal
+Curve_ind <- sapply(Urine_IDs, function(id) {
+  i <- which(SumAcrylamideDay2_merged$IDkode == id)
+  Kernel[, i, drop = FALSE] %*% SumAcrylamideDay2_merged$mean[i]
+})
+
+Curve_day2 <- tibble(
+  Hours = Grid,
+  mean = rowMeans(Curve_MC),
+  MC_P05 = apply(Curve_MC, 1, quantile, 0.05),
+  MC_P95 = apply(Curve_MC, 1, quantile, 0.95),
+  Ind_P05 = apply(Curve_ind, 1, quantile, 0.05),
+  Ind_P95 = apply(Curve_ind, 1, quantile, 0.95)
+)
+
+# The area under the curve is the mean daily dose per individual (ug)
+cat("Area under the mean curve (ug):", round(sum(Curve_day2$mean) * 0.05, 1),
+    " Mean daily dose per individual (ug):", round(mean(SumAcrylamideDay2_total$mean), 1), "\n")
+
+Band_labels <- c(Ind = "Between individuals (P05-P95)", MC = "Monte Carlo uncertainty of the mean (P05-P95)")
+
+Plot_Acrylamide_Day2_curve <- ggplot(Curve_day2, aes(x = Hours)) +
+  geom_ribbon(aes(ymin = Ind_P05, ymax = Ind_P95, fill = "Ind"), alpha = 0.25) +
+  geom_ribbon(aes(ymin = MC_P05, ymax = MC_P95, fill = "MC"), alpha = 0.6) +
+  geom_line(aes(y = mean), colour = "#D55E00", linewidth = 1.2) +
+  scale_fill_manual(values = c(Ind = "grey50", MC = "#D55E00"), labels = Band_labels) +
+  scale_x_continuous(breaks = seq(0, 24, by = 3), limits = c(0, 24),
+                     labels = function(x) sprintf("%02d:00", as.integer(x) %% 24)) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16),
+        legend.position = "bottom", legend.title = element_blank(),
+        legend.text = element_text(size = 12)) +
+  xlab("Time of day") +
+  ylab("Acrylamide exposure rate (ug/h)\nmean of all individuals")
+
+Plot_Acrylamide_Day2_curve
+
+ggsave(filename = file.path(newday, "Plot_Acrylamide_Day2_curve.jpeg"),
+       plot = Plot_Acrylamide_Day2_curve, width = 250, height = 200, units = "mm")
+
+
+# --- Cumulative exposure over the day, all individuals -----------------------
+
+# Mean cumulative exposure: starts at 0 at midnight and is constant between meals
+Cumulative_day2 <- SumAcrylamideDay2_merged %>%
+  arrange(IDkode, Hours) %>%
+  group_by(IDkode) %>%
+  mutate(Cumulative = cumsum(mean)) %>%
+  ungroup() %>%
+  dplyr::select(IDkode, Hours, Cumulative)
+
+Cumulative_day2 <- bind_rows(
+  Cumulative_day2,
+  tibble(IDkode = Urine_IDs, Hours = 0, Cumulative = 0),
+  Cumulative_day2 %>% group_by(IDkode) %>% summarise(Hours = 24, Cumulative = max(Cumulative), .groups = "drop")
+) %>%
+  mutate(IDkode = factor(IDkode)) %>%
+  arrange(IDkode, Hours)
+
+Plot_Acrylamide_Day2_cumulative <- ggplot(Cumulative_day2, aes(x = Hours, y = Cumulative, colour = IDkode)) +
+  geom_step(linewidth = 0.8) +
+  geom_text_repel(data = filter(Cumulative_day2, Hours == 24), aes(label = IDkode),
+                  direction = "y", hjust = 0, xlim = c(24.4, 26), size = 3.5,
+                  segment.size = 0.2, min.segment.length = 0, show.legend = FALSE) +
+  scale_colour_viridis_d(option = "turbo") +
+  scale_x_continuous(breaks = c(0, 6, 12, 18, 24), limits = c(0, 26)) +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 14), axis.title = element_text(size = 16),
+        legend.position = "none") +
+  xlab("Time of day (hours)") +
+  ylab("Cumulative acrylamide exposure (ug), mean")
+
+Plot_Acrylamide_Day2_cumulative
+
+ggsave(filename = file.path(newday, "Plot_Acrylamide_Day2_cumulative.jpeg"),
+       plot = Plot_Acrylamide_Day2_cumulative, width = 250, height = 200, units = "mm")
